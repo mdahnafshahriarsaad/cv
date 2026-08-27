@@ -8,6 +8,17 @@ export interface ProfessionalLink {
   url: string;
 }
 
+export interface ProfilePhoto {
+  /** data URL of the cropped image */
+  dataUrl: string;
+  /** zoom factor 1 = 100% */
+  zoom: number;
+  /** offset x in % (0-100) */
+  offsetX: number;
+  /** offset y in % (0-100) */
+  offsetY: number;
+}
+
 export interface PersonalInfo {
   fullName: string;
   professionalTitle: string;
@@ -15,6 +26,7 @@ export interface PersonalInfo {
   phone: string;
   location: string;
   links: ProfessionalLink[];
+  photo: ProfilePhoto | null;
 }
 
 export interface Experience {
@@ -168,6 +180,7 @@ export function createEmptyCV(name = "Untitled CV"): CVDocument {
       phone: "",
       location: "",
       links: [],
+      photo: null,
     },
     summary: "",
     profileType: "",
@@ -208,6 +221,7 @@ export function createSampleCV(): CVDocument {
       { id: uid(), type: "github", url: "github.com/alexjohnson" },
       { id: uid(), type: "portfolio", url: "alexjohnson.dev" },
     ],
+    photo: null,
   };
   base.summary =
     "Frontend Developer with 4+ years of experience building responsive, accessible web applications. Passionate about clean architecture, design systems, and delivering delightful user experiences.";

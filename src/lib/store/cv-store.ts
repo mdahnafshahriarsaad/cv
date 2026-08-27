@@ -43,6 +43,8 @@ interface CVStoreState {
 
   // personal info
   updatePersonal: (patch: Partial<CVDocument["personalInfo"]>) => void;
+  setPhoto: (photo: CVDocument["personalInfo"]["photo"]) => void;
+  removePhoto: () => void;
   addLink: () => void;
   updateLink: (id: string, patch: Partial<ProfessionalLink>) => void;
   removeLink: (id: string) => void;
@@ -162,6 +164,26 @@ export const useCVStore = create<CVStoreState>()(
         });
       },
 
+      setPhoto: (photo) => {
+        const c = get().current;
+        if (!c) return;
+        set({
+          current: touch({
+            ...c,
+            personalInfo: { ...c.personalInfo, photo },
+          }),
+        });
+      },
+      removePhoto: () => {
+        const c = get().current;
+        if (!c) return;
+        set({
+          current: touch({
+            ...c,
+            personalInfo: { ...c.personalInfo, photo: null },
+          }),
+        });
+      },
       addLink: () => {
         const c = get().current;
         if (!c) return;

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Field, DarkInput, MonthInput } from "@/components/shared/form-primitives";
+import { PhotoControl, PhotoUploadModal } from "@/components/shared/photo-upload";
 import { useCVStore } from "@/lib/store/cv-store";
 import { StepHeader } from "@/components/builder/guided-builder";
 import { Plus, Trash2, ChevronDown, ChevronUp, Linkedin, Github, Globe, FolderOpen } from "lucide-react";
@@ -14,6 +15,7 @@ export function StepPersonal() {
   const updateLink = useCVStore((s) => s.updateLink);
   const removeLink = useCVStore((s) => s.removeLink);
   const [showLinks, setShowLinks] = React.useState(false);
+  const [showPhoto, setShowPhoto] = React.useState(false);
 
   if (!cv) return null;
   const p = cv.personalInfo;
@@ -24,6 +26,11 @@ export function StepPersonal() {
         title="Let's start with you."
         subtitle="This information will appear at the top of your CV."
       />
+
+      {/* Photo */}
+      <div className="mb-6">
+        <PhotoControl onOpen={() => setShowPhoto(true)} />
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Full Name" htmlFor="fullName" required className="sm:col-span-2">
@@ -128,6 +135,8 @@ export function StepPersonal() {
           </div>
         )}
       </div>
+
+      {showPhoto && <PhotoUploadModal onClose={() => setShowPhoto(false)} />}
     </div>
   );
 }

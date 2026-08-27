@@ -32,3 +32,25 @@ Work Log:
 Stage Summary:
 - All flows verified via Agent Browser: landing → create → guided (8 steps) → templates → editor → download; form builder path; saved CV persistence + reload; live preview updates; design color changes; mobile responsive.
 - Lint passes clean. No console errors. Dev server running on port 3000.
+
+---
+Task ID: 10
+Agent: orchestrator
+Task: Professional UI & Template System Upgrade (54 templates, photo, animations, typography)
+
+Work Log:
+- Typography: added Inter (body) + Manrope (display headings) via next/font; refined global CSS with font-feature-settings, letter-spacing, and h1/h2 Manrope default
+- Template engine: rewrote cv-renderer with 12 distinct layout archetypes (centered-single, minimal-lines, left-sidebar, right-sidebar, header-band-twocol, timeline, editorial, top-photo, grid-blocks, split-horizontal, bold-accent, dense-compact)
+- 54 templates defined across 9 collections (Minimal/Modern/Professional/Creative/Tech/Student/Bold/Editorial/Unique), each with unique palette + font pairing + photo shape + accent style
+- Photo system: ProfilePhoto data model (dataUrl + zoom + offsets), PhotoUploadModal with drag-drop upload, circle crop preview, zoom slider, drag-to-reposition, replace/remove; PhotoControl integrated into personal-info step + design panel
+- Landing upgrades: How It Works redesigned as horizontal timeline with animated connecting line + staggered step reveals; Hero rebuilt with layered entrance (badge → headline lines → desc → buttons → CV stack) + scroll parallax + mouse-parallax 3D tilt on CV stack; Navbar refined with smaller type + animated active underline + scroll-aware height
+- Editor upgrades: section-highlight-on-edit (inset red box-shadow on corresponding CV section), template switching animation (scale/fade transition on templateId change), 14 curated accent colors, 4 typography pairings
+- Template selection page: 54-template grid with collection filter tabs (counts), search, favorites, featured Vertex, preview modal with zoom
+- Fixed nested-button HTML validation error in create-start option cards
+
+Stage Summary:
+- 54 distinct templates verified rendering (Crimson=left-sidebar, Vertex=header-band, etc.)
+- Photo upload modal working; Design panel shows photo option only for photo-capable templates
+- Lint clean, no console errors, dev server healthy
+- Mobile responsive verified (390px hero + builder + editor tabs)
+- All flows working: landing → create → guided/form → templates (54) → editor → download

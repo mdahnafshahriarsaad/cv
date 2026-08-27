@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, X, ZoomIn, ZoomOut, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Star, X, ZoomIn, ZoomOut } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
 import { CVRenderer } from "@/components/templates/cv-renderer";
-import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplate } from "@/components/templates/registry";
+import { TEMPLATES, FILTER_CATEGORIES, getTemplate, templatesByCollection } from "@/components/templates/registry";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore } from "@/lib/store/cv-store";
 import { createSampleCV } from "@/lib/cv-data/types";
@@ -16,6 +16,7 @@ export function TemplateSelectPage() {
   const [filter, setFilter] = React.useState<string>("All");
   const [previewId, setPreviewId] = React.useState<string | null>(null);
   const [favorites, setFavorites] = React.useState<Set<string>>(new Set());
+  const [search, setSearch] = React.useState("");
   const setView = useAppStore((s) => s.setView);
   const templatesOrigin = useAppStore((s) => s.templatesOrigin);
   const cv = useCVStore((s) => s.current);
@@ -42,12 +43,15 @@ export function TemplateSelectPage() {
   };
 
   const filtered = React.useMemo(() => {
-    if (filter === "All") return TEMPLATES;
-    const f = filter.toLowerCase();
-    return TEMPLATES.filter((t) => t.categories.some((c) => c.toLowerCase() === f));
-  }, [filter]);
+    let list = templatesByCollection(filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((t) => t.name.toLowerCase().includes(q) || t.collection.toLowerCase().includes(q) || t.description.toLowerCase().includes(q));
+    }
+    return list;
+  }, [filter, search]);
 
-  const featured = TEMPLATES.find((t) => t.editorChoice) ?? TEMPLATES[0];
+  const featured = TEMPLATES.find((t) => t.id === "vertex")!;
   const featuredCV = React.useMemo(() => {
     const base = createSampleCV();
     base.design.templateId = featured.id;
@@ -63,7 +67,7 @@ export function TemplateSelectPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <button
             onClick={back}
-            className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-sm font-medium"
+            className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-[13px] font-medium"
           >
             <ArrowLeft className="size-4" /> Back
           </button>
@@ -76,24 +80,24 @@ export function TemplateSelectPage() {
         {/* Heading */}
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-nirvash-red uppercase">
-            Choose Your Design
+            {TEMPLATES.length} Professional Templates
           </span>
           <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05]">
             Choose Your CV Design
           </h1>
-          <p className="mt-4 text-white/55 text-base leading-relaxed">
-            Start with a layout you love. You can always change it later.
+          <p className="mt-4 text-white/55 text-[15px] leading-relaxed">
+            Start with a layout you love. Every template works with your information — and you can change it anytime.
           </p>
         </div>
 
-        {/* Featured template */}
-        <div className="mt-14 grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-center rounded-[16px] border border-white/10 bg-white/[0.02] p-6 sm:p-8 lg:p-10">
+        {/* Featured */}
+        <div className="mt-12 grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-center rounded-[16px] border border-white/10 bg-white/[0.02] p-6 sm:p-8 lg:p-10">
           <div className="order-2 lg:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-nirvash-red/15 border border-nirvash-red/30 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase text-nirvash-red">
               <Star className="size-3 fill-current" /> Editor's Choice
             </span>
             <h2 className="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight">{featured.name}</h2>
-            <p className="mt-2 text-white/50 text-sm font-medium">{featured.category}</p>
+            <p className="mt-2 text-white/50 text-sm font-medium">{featured.collection} · {featured.archetype.replace("-", " ")}</p>
             <p className="mt-4 text-white/65 text-[15px] leading-relaxed max-w-md">{featured.description}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <BrandButton variant="primary" size="lg" onClick={() => selectTemplate(featured.id)}>
@@ -105,33 +109,39 @@ export function TemplateSelectPage() {
             </div>
           </div>
           <div className="order-1 lg:order-2 flex justify-center">
-            <div className="origin-top cursor-pointer" style={{ transform: "scale(0.55)" }} onClick={() => setPreviewId(featured.id)}>
+            <div className="origin-top cursor-pointer transition-transform hover:scale-[1.02]" style={{ transform: "scale(0.55)" }} onClick={() => setPreviewId(featured.id)}>
               <CVRenderer cv={featuredCV} width={794} />
             </div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="mt-16">
-          <h3 className="text-xl font-bold tracking-tight mb-5">Explore Templates</h3>
-          <div className="flex flex-wrap gap-2">
-            {TEMPLATE_CATEGORIES.map((c) => {
+        {/* Search + filters */}
+        <div className="mt-14">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <h3 className="text-xl font-bold tracking-tight">Explore Templates</h3>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search templates…"
+              className="h-9 rounded-[10px] bg-white/[0.04] border border-white/12 text-white text-[13px] px-3.5 placeholder:text-white/30 focus-visible:border-nirvash-red outline-none w-full sm:w-56"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-8">
+            {FILTER_CATEGORIES.map((c) => {
               const isActive = filter === c;
+              const count = c === "All" ? TEMPLATES.length : templatesByCollection(c).length;
               return (
                 <button
                   key={c}
                   onClick={() => setFilter(c)}
                   className={cn(
                     "relative px-3.5 py-1.5 text-[13px] font-medium transition-colors rounded-[8px]",
-                    isActive ? "text-white" : "text-white/55 hover:text-white"
+                    isActive ? "text-white bg-white/[0.06]" : "text-white/55 hover:text-white"
                   )}
                 >
-                  {c}
+                  {c} <span className="text-white/35 text-[11px]">{count}</span>
                   {isActive && (
-                    <motion.span
-                      layoutId="cat-active"
-                      className="absolute left-2 right-2 -bottom-0.5 h-0.5 rounded-full bg-nirvash-red"
-                    />
+                    <motion.span layoutId="cat-active" className="absolute left-2 right-2 -bottom-0.5 h-0.5 rounded-full bg-nirvash-red" />
                   )}
                 </button>
               );
@@ -139,7 +149,7 @@ export function TemplateSelectPage() {
           </div>
 
           {/* Grid */}
-          <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
             {filtered.map((t) => {
               const previewCV = createSampleCV();
               previewCV.design.templateId = t.id;
@@ -147,64 +157,59 @@ export function TemplateSelectPage() {
               return (
                 <div
                   key={t.id}
-                  className="group relative rounded-[14px] overflow-hidden border border-white/10 bg-[#1a1a1a] transition-all hover:border-nirvash-red/40 hover:shadow-xl"
+                  className="group relative rounded-[12px] overflow-hidden border border-white/8 bg-[#1a1a1a] transition-all hover:border-nirvash-red/35 hover:shadow-xl hover:-translate-y-0.5"
                 >
-                  {/* fav */}
                   <button
                     onClick={() => toggleFav(t.id)}
-                    className={cn(
-                      "absolute top-3 right-3 z-20 size-9 rounded-full flex items-center justify-center transition-all backdrop-blur-sm",
-                      isFav ? "bg-nirvash-red text-white" : "bg-black/40 text-white/60 hover:text-white"
-                    )}
+                    className={cn("absolute top-2.5 right-2.5 z-20 size-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm", isFav ? "bg-nirvash-red text-white" : "bg-black/40 text-white/50 hover:text-white")}
                     aria-label="Favorite"
                   >
-                    <Star className={cn("size-4", isFav && "fill-current")} />
+                    <Star className={cn("size-3.5", isFav && "fill-current")} />
                   </button>
-
-                  {/* preview */}
                   <div
                     className="relative overflow-hidden bg-[#1a1a1a] flex items-center justify-center cursor-pointer"
-                    style={{ height: 380 }}
+                    style={{ height: 360 }}
                     onClick={() => setPreviewId(t.id)}
                   >
-                    <div className="origin-top transition-transform duration-500 group-hover:scale-105" style={{ transform: "scale(0.4)" }}>
+                    <div className="origin-top transition-transform duration-500 group-hover:scale-105" style={{ transform: "scale(0.38)" }}>
                       <CVRenderer cv={previewCV} width={794} showShadow={false} />
                     </div>
-                    {/* hover overlay */}
-                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/45 transition-all duration-300 flex items-center justify-center gap-2">
-                      <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-[10px] bg-white/10 backdrop-blur border border-white/25 px-3.5 py-2 text-[13px] font-medium text-white">
+                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/45 transition-all duration-300 flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-[10px] bg-white/10 backdrop-blur border border-white/25 px-3.5 py-2 text-[12px] font-medium text-white">
                         <ZoomIn className="size-3.5" /> Preview
                       </span>
                     </div>
                   </div>
-
-                  {/* meta */}
-                  <div className="p-4 flex items-center justify-between bg-white/[0.02]">
+                  <div className="p-3.5 flex items-center justify-between bg-white/[0.02]">
                     <div className="min-w-0">
-                      <h4 className="text-[15px] font-extrabold tracking-tight">{t.name}</h4>
-                      <p className="text-[12px] text-white/45 truncate">{t.category}</p>
+                      <h4 className="text-[14px] font-bold tracking-tight">{t.name}</h4>
+                      <p className="text-[11px] text-white/40 truncate">{t.collection}</p>
                     </div>
-                    <BrandButton variant="primary" size="sm" onClick={() => selectTemplate(t.id)}>
-                      Use <ArrowRight className="size-3.5" />
-                    </BrandButton>
+                    <button
+                      onClick={() => selectTemplate(t.id)}
+                      className="text-[11px] font-semibold text-nirvash-red hover:text-white transition-colors shrink-0 inline-flex items-center gap-1"
+                    >
+                      Use <ArrowRight className="size-3" />
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
+          {filtered.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-white/50 text-sm">No templates match your search.</p>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Preview modal */}
       <AnimatePresence>
         {previewId && (
           <PreviewModal
             templateId={previewId}
             onClose={() => setPreviewId(null)}
-            onUse={() => {
-              selectTemplate(previewId);
-              setPreviewId(null);
-            }}
+            onUse={() => { selectTemplate(previewId); setPreviewId(null); }}
           />
         )}
       </AnimatePresence>
@@ -212,16 +217,8 @@ export function TemplateSelectPage() {
   );
 }
 
-function PreviewModal({
-  templateId,
-  onClose,
-  onUse,
-}: {
-  templateId: string;
-  onClose: () => void;
-  onUse: () => void;
-}) {
-  const [zoom, setZoom] = React.useState(0.7);
+function PreviewModal({ templateId, onClose, onUse }: { templateId: string; onClose: () => void; onUse: () => void }) {
+  const [zoom, setZoom] = React.useState(0.65);
   const t = getTemplate(templateId);
   const previewCV = React.useMemo(() => {
     const base = createSampleCV();
@@ -230,15 +227,10 @@ function PreviewModal({
   }, [templateId]);
 
   React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
 
   return (
@@ -246,32 +238,23 @@ function PreviewModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[80] bg-[#212121]/90 backdrop-blur-md flex flex-col"
+      className="fixed inset-0 z-[80] bg-[#212121]/92 backdrop-blur-md flex flex-col"
     >
-      {/* top controls */}
       <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b border-white/8 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <h3 className="text-[15px] font-bold tracking-tight truncate">{t.name}</h3>
-          <span className="text-[12px] text-white/45">{t.category}</span>
+          <span className="text-[12px] text-white/45">{t.collection}</span>
+          {t.badges?.map(b => <span key={b} className="text-[9px] font-bold uppercase tracking-wide text-nirvash-red border border-nirvash-red/30 rounded-full px-1.5 py-0.5">{b}</span>)}
         </div>
         <div className="flex items-center gap-2">
-          {/* zoom controls */}
           <div className="hidden sm:flex items-center gap-1 rounded-[10px] border border-white/12 bg-white/[0.04] px-1.5 py-1">
-            <button onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} className="size-7 rounded-md hover:bg-white/10 flex items-center justify-center" aria-label="Zoom out">
-              <ZoomOut className="size-4" />
-            </button>
+            <button onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))} className="size-7 rounded-md hover:bg-white/10 flex items-center justify-center" aria-label="Zoom out"><ZoomOut className="size-4" /></button>
             <span className="text-[12px] font-medium text-white/70 w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom((z) => Math.min(1.2, z + 0.1))} className="size-7 rounded-md hover:bg-white/10 flex items-center justify-center" aria-label="Zoom in">
-              <ZoomIn className="size-4" />
-            </button>
+            <button onClick={() => setZoom((z) => Math.min(1.2, z + 0.1))} className="size-7 rounded-md hover:bg-white/10 flex items-center justify-center" aria-label="Zoom in"><ZoomIn className="size-4" /></button>
           </div>
-          <button onClick={onClose} className="size-9 rounded-[10px] border border-white/12 hover:bg-white/10 flex items-center justify-center" aria-label="Close">
-            <X className="size-4" />
-          </button>
+          <button onClick={onClose} className="size-9 rounded-[10px] border border-white/12 hover:bg-white/10 flex items-center justify-center" aria-label="Close"><X className="size-4" /></button>
         </div>
       </div>
-
-      {/* preview area */}
       <div className="flex-1 overflow-auto p-6 sm:p-10 flex items-start justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -282,12 +265,10 @@ function PreviewModal({
           <CVRenderer cv={previewCV} width={794} />
         </motion.div>
       </div>
-
-      {/* bottom CTA */}
       <div className="shrink-0 border-t border-white/8 bg-[#212121]/80 backdrop-blur-md px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-[13px] font-semibold">{t.name}</p>
-          <p className="text-[12px] text-white/45">{t.description}</p>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold truncate">{t.name}</p>
+          <p className="text-[12px] text-white/45 truncate">{t.description}</p>
         </div>
         <BrandButton variant="primary" size="lg" onClick={onUse}>
           Use This Template <ArrowRight className="size-4" />

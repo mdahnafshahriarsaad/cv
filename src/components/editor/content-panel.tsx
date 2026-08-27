@@ -29,9 +29,16 @@ const SECTIONS: { id: SectionId; label: string; icon: any }[] = [
   { id: "additional", label: "Additional", icon: MoreHorizontal },
 ];
 
-export function ContentPanel() {
+export function ContentPanel({ onActiveSection }: { onActiveSection?: (s: string | null) => void }) {
   const cv = useCVStore((s) => s.current);
   const [open, setOpen] = React.useState<SectionId>("personal");
+
+  React.useEffect(() => {
+    // map content panel section to renderer highlight key
+    const map: Record<string, string> = { additional: "awards" };
+    onActiveSection?.(open ? (map[open] ?? open) : null);
+  }, [open, onActiveSection]);
+
   if (!cv) return null;
 
   const counts: Partial<Record<SectionId, number>> = {

@@ -24,6 +24,8 @@ export function CVEditor() {
   const [zoom, setZoom] = React.useState(0.85);
   const [showDownload, setShowDownload] = React.useState(false);
   const [showTemplateChange, setShowTemplateChange] = React.useState(false);
+  const [highlightSection, setHighlightSection] = React.useState<string | null>(null);
+  const [switching, setSwitching] = React.useState(false);
   const setView = useAppStore((s) => s.setView);
   const setTemplatesOrigin = useAppStore((s) => s.setTemplatesOrigin);
   const cv = useCVStore((s) => s.current);
@@ -45,6 +47,18 @@ export function CVEditor() {
     }, 800);
     return () => clearTimeout(t);
   }, [cv, setSaveStatus]);
+
+  // trigger switching animation when templateId changes (returning from template browser)
+  const lastTemplate = React.useRef<string | null>(cv?.design.templateId ?? null);
+  React.useEffect(() => {
+    if (cv && lastTemplate.current !== null && lastTemplate.current !== cv.design.templateId) {
+      setSwitching(true);
+      const t = setTimeout(() => setSwitching(false), 500);
+      lastTemplate.current = cv.design.templateId;
+      return () => clearTimeout(t);
+    }
+    lastTemplate.current = cv?.design.templateId ?? null;
+  }, [cv?.design.templateId]);
 
   if (!cv) {
     return (
@@ -137,7 +151,7 @@ export function CVEditor() {
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
-            {tab === "content" && <ContentPanel />}
+            {tab === "content" && <ContentPanel onActiveSection={setHighlightSection} />}
             {tab === "design" && <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />}
             {tab === "layout" && <LayoutPanel />}
           </div>
@@ -145,7 +159,7 @@ export function CVEditor() {
 
         {/* Right: preview */}
         <div className="flex-1 min-w-0 bg-[#181818] relative overflow-hidden">
-          <PreviewArea cv={cv} zoom={zoom} setZoom={setZoom} />
+          <PreviewArea cv={cv} zoom={zoom} setZoom={setZoom} highlightSection={highlightSection} switching={switching} />
         </div>
       </div>
 
@@ -172,11 +186,11 @@ export function CVEditor() {
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
-          {mobileTab === "edit" && <ContentPanel />}
+          {mobileTab === "edit" && <ContentPanel onActiveSection={setHighlightSection} />}
           {mobileTab === "design" && <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />}
           {mobileTab === "preview" && (
             <div className="bg-[#181818] p-4">
-              <PreviewArea cv={cv} zoom={0.6} setZoom={() => {}} mobile />
+              <PreviewArea cv={cv} zoom={0.6} setZoom={() => {}} mobile highlightSection={highlightSection} switching={switching} />
             </div>
           )}
         </div>
@@ -211,19 +225,32 @@ function PreviewArea({
   zoom,
   setZoom,
   mobile = false,
+  highlightSection,
+  switching,
 }: {
   cv: ReturnType<typeof useCVStore.getState>["current"];
   zoom: number;
   setZoom: (z: number) => void;
   mobile?: boolean;
+  highlightSection?: string | null;
+  switching?: boolean;
 }) {
   if (!cv) return null;
   return (
     <div className="h-full w-full overflow-auto flex flex-col">
       <div className="flex-1 flex items-start justify-center p-4 sm:p-8 lg:p-10">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}>
-          <CVRenderer cv={cv} width={794} />
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={cv.design.templateId}
+            initial={switching ? { opacity: 0, scale: 0.96, y: 8 } : false}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={switching ? { opacity: 0, scale: 0.97, y: -8 } : { opacity: 1 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+          >
+            <CVRenderer cv={cv} width={794} highlightSection={highlightSection} />
+          </motion.div>
+        </AnimatePresence>
       </div>
       {/* floating zoom controls */}
       {!mobile && (

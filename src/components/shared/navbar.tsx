@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
@@ -18,6 +17,7 @@ const NAV_LINKS = [
 export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }) {
   const [scrolled, setScrolled] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  const [active, setActive] = React.useState("home");
   const setView = useAppStore((s) => s.setView);
 
   React.useEffect(() => {
@@ -29,6 +29,7 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
 
   const go = (target: string) => {
     setOpen(false);
+    setActive(target);
     onNavigate?.(target);
   };
 
@@ -46,7 +47,7 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 sm:h-18 items-center justify-between">
+        <div className={cn("flex items-center justify-between transition-all", scrolled ? "h-14" : "h-16 sm:h-18")}>
           {/* Brand */}
           <button
             onClick={() => go("home")}
@@ -56,26 +57,37 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
             <NirvashBrand variant="dark" size="sm" showSub />
           </button>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map((l) => (
-              <button
-                key={l.target}
-                onClick={() => go(l.target)}
-                className="text-sm font-medium text-white/70 hover:text-white transition-colors link-underline"
-              >
-                {l.label}
-              </button>
-            ))}
+          {/* Desktop nav with animated underline */}
+          <nav className="hidden md:flex items-center gap-1 relative">
+            {NAV_LINKS.map((l) => {
+              const isActive = active === l.target;
+              return (
+                <button
+                  key={l.target}
+                  onClick={() => go(l.target)}
+                  onMouseEnter={() => setActive(l.target)}
+                  className={cn(
+                    "relative px-3.5 py-2 text-[13px] font-medium transition-colors",
+                    isActive ? "text-white" : "text-white/55 hover:text-white/80"
+                  )}
+                >
+                  {l.label}
+                  {isActive && (
+                    <span className="absolute left-3.5 right-3.5 -bottom-0.5 h-px bg-nirvash-red" />
+                  )}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Right actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="text-sm font-medium text-white/70 hover:text-white transition-colors px-3 py-2">
+            <button className="text-[13px] font-medium text-white/60 hover:text-white transition-colors px-3 py-2">
               Sign In
             </button>
-            <BrandButton variant="primary" size="sm" onClick={startCreate}>
-              Create My CV →
+            <BrandButton variant="primary" size="sm" onClick={startCreate} className="group">
+              Create My CV
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
             </BrandButton>
           </div>
 
@@ -85,7 +97,7 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
             onClick={() => setOpen((o) => !o)}
             aria-label="Toggle menu"
           >
-            {open ? <X className="size-6" /> : <Menu className="size-6" />}
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
@@ -98,27 +110,30 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
               <button
                 key={l.target}
                 onClick={() => go(l.target)}
-                className="block w-full text-left px-3 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                className="block w-full text-left px-3 py-2.5 text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
                 {l.label}
               </button>
             ))}
             <div className="pt-3 mt-3 border-t border-white/10 space-y-2">
-              <button className="block w-full text-left px-3 py-3 text-sm font-medium text-white/80 hover:text-white">
+              <button className="block w-full text-left px-3 py-2.5 text-[13px] font-medium text-white/80 hover:text-white">
                 Sign In
               </button>
-              <BrandButton
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={startCreate}
-              >
-                Create My CV →
+              <BrandButton variant="primary" size="lg" className="w-full" onClick={startCreate}>
+                Create My CV
               </BrandButton>
             </div>
           </div>
         </div>
       )}
     </header>
+  );
+}
+
+function ArrowRight({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
   );
 }

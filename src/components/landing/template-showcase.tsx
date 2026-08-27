@@ -5,11 +5,12 @@ import { Reveal } from "@/components/shared/reveal";
 import { BrandButton } from "@/components/shared/brand-button";
 import { CVRenderer } from "@/components/templates/cv-renderer";
 import { createSampleCV } from "@/lib/cv-data/types";
-import { TEMPLATES } from "@/components/templates/registry";
+import { TEMPLATES, getTemplate } from "@/components/templates/registry";
 import { useAppStore } from "@/lib/store/app-store";
 import { ArrowRight } from "lucide-react";
 
-const featured = TEMPLATES.slice(0, 3);
+// showcase a diverse set: Vertex (modern), Apex (minimal), Crimson (bold)
+const featured = ["vertex", "apex", "crimson"].map((id) => getTemplate(id));
 
 export function TemplateShowcase() {
   const setView = useAppStore((s) => s.setView);
@@ -26,14 +27,14 @@ export function TemplateShowcase() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
         <Reveal className="max-w-2xl">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-nirvash-red uppercase">
-            Templates
+            {TEMPLATES.length} Professional Templates
           </span>
           <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#212121] leading-[1.05]">
             Designed to Make You Stand Out.
           </h2>
           <p className="mt-4 text-[#6b6b6b] text-base sm:text-lg">
-            Choose from professional, modern, minimal, creative, and colorful
-            CV templates.
+            Choose from professional, modern, minimal, creative, tech, editorial,
+            and bold CV templates — each with its own identity.
           </p>
         </Reveal>
 
@@ -41,7 +42,6 @@ export function TemplateShowcase() {
           {featured.map((t, i) => {
             const cv = createSampleCV();
             cv.design.templateId = t.id;
-            cv.design.accentColor = i === 1 ? "#212121" : "#FF4336";
             return (
               <Reveal key={t.id} delay={i * 0.1}>
                 <button
@@ -68,7 +68,7 @@ export function TemplateShowcase() {
                       <h3 className="text-base font-extrabold tracking-tight text-[#212121]">
                         {t.name}
                       </h3>
-                      <p className="text-xs text-[#6b6b6b] mt-0.5">{t.category}</p>
+                      <p className="text-xs text-[#6b6b6b] mt-0.5">{t.collection}</p>
                     </div>
                     {t.badges?.[0] && (
                       <span className="text-[10px] font-bold tracking-wide uppercase text-nirvash-red border border-nirvash-red/30 rounded-full px-2 py-0.5">

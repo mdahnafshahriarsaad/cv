@@ -77,9 +77,9 @@ export function CreateStartPage() {
           <div className="mt-12 grid lg:grid-cols-2 gap-5 lg:gap-7">
             {/* Guide Me */}
             <Reveal>
-              <button
+              <div
                 onClick={startGuided}
-                className="group relative w-full text-left rounded-[14px] bg-white/[0.03] border border-white/10 p-8 sm:p-10 overflow-hidden transition-all hover:border-nirvash-red/40 hover:bg-white/[0.05]"
+                className="group relative w-full text-left rounded-[14px] bg-white/[0.03] border border-white/10 p-8 sm:p-10 overflow-hidden transition-all hover:border-nirvash-red/40 hover:bg-white/[0.05] cursor-pointer"
               >
                 <div className="absolute -right-16 -top-16 size-48 rounded-full bg-nirvash-red/10 blur-3xl group-hover:bg-nirvash-red/20 transition-colors" />
                 <div className="relative">
@@ -124,14 +124,14 @@ export function CreateStartPage() {
                     </BrandButton>
                   </div>
                 </div>
-              </button>
+              </div>
             </Reveal>
 
             {/* Fill It Myself */}
             <Reveal delay={0.1}>
-              <button
+              <div
                 onClick={startForm}
-                className="group relative w-full text-left rounded-[14px] bg-[#F5F5F5] text-[#212121] p-8 sm:p-10 overflow-hidden border border-black/5 transition-all hover:shadow-2xl"
+                className="group relative w-full text-left rounded-[14px] bg-[#F5F5F5] text-[#212121] p-8 sm:p-10 overflow-hidden border border-black/5 transition-all hover:shadow-2xl cursor-pointer"
               >
                 <div className="absolute -right-16 -bottom-16 size-48 rounded-full bg-nirvash-red/8 blur-3xl" />
                 <div className="relative">
@@ -173,7 +173,7 @@ export function CreateStartPage() {
                     </BrandButton>
                   </div>
                 </div>
-              </button>
+              </div>
             </Reveal>
           </div>
 
