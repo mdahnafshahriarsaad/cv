@@ -9,6 +9,7 @@ import { GuidedBuilder } from "@/components/builder/guided-builder";
 import { FormBuilder } from "@/components/builder/form-builder";
 import { TemplateSelectPage } from "@/components/templates/template-select-page";
 import { CVEditor } from "@/components/editor/cv-editor";
+import { PreviewPage } from "@/components/editor/preview-page";
 
 export default function Home() {
   const view = useAppStore((s) => s.view);
@@ -28,6 +29,7 @@ export default function Home() {
         {view === "form-builder" && <FormBuilder />}
         {view === "templates" && <TemplateSelectPage />}
         {view === "editor" && <CVEditor />}
+        {view === "preview" && <PreviewPage />}
       </div>
     </>
   );

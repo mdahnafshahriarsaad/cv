@@ -8,7 +8,8 @@ export type AppView =
   | "guided-builder"
   | "form-builder"
   | "templates"
-  | "editor";
+  | "editor"
+  | "preview";
 
 interface AppState {
   view: AppView;

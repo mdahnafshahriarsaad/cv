@@ -79,3 +79,35 @@ Stage Summary:
 - Lazy loading works: off-screen cards show A4 shimmer skeletons, render full CV on scroll into view
 - Hero video visible with 6px blur maintained; text readable (9/10 premium rating)
 - Lint clean, no console errors
+
+---
+Task ID: 12
+Agent: orchestrator
+Task: Fix CV preview scaling — auto-fit workspace + dedicated preview page
+
+Work Log:
+- Root cause: `transform: scale()` without layout-size adjustment caused the 794×1123px CV to overflow the browser window. Additionally, Framer Motion's `animate={{ scale: 1 }}` was overriding the zoom `transform: scale(zoom)`, rendering the CV at full size.
+- Built PreviewWorkspace component:
+  - ResizeObserver measures container width/height + actual CV content height (handles multi-page)
+  - Auto-calculates Fit Page zoom = min(cw/A4_W, ch/docRealH), Fit Width = cw/A4_W
+  - Scaled content sits in a wrapper with exact scaled dimensions (width: docW, height: docH) so layout/scrolling is correct
+  - Zoom controls: − / percentage / + / Fit Page / Fit Width / 100%
+  - Extra bottom padding (pb-20) + height subtraction for controls bar clearance
+  - Separated zoom transform (static div) from entrance animation (motion.div) to prevent Framer Motion override
+- Added "preview" view to app store
+- Built dedicated full-screen PreviewPage:
+  - Top nav: ← Back to Editor | CV name + Autosaved ✓ | Template / Print / Edit CV / Download
+  - Mobile: action row with Template/Print/Edit buttons
+  - PreviewWorkspace with defaultMode="page" (Fit Page)
+- Wired editor: inline preview uses PreviewWorkspace (Fit Page default); "Preview" button opens full-screen PreviewPage
+- Mobile editor: Preview tab uses PreviewWorkspace with Fit Width default
+- Fixed template selection from landing: creates sample CV if none exists
+- Key bug fix: Framer Motion `animate={{ scale: 1 }}` was overriding `style={{ transform: scale(zoom) }}` — separated into static zoom wrapper + animated inner div
+
+Stage Summary:
+- CV preview auto-fits to available space — no browser zoom needed (verified at 1280×577 → 37%, 1440×900 → 65%)
+- Full A4 page visible with zoom controls below
+- Fit Page / Fit Width / 100% modes all work
+- Back to Editor preserves all data (verified: Alex Morgan, CV name, all sections intact)
+- Dedicated preview page with Back/Download/Print/Template actions
+- Lint clean, no console errors

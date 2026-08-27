@@ -33,7 +33,13 @@ export function TemplateSelectPage() {
   };
 
   const selectTemplate = (id: string) => {
-    setTemplate(id);
+    // If no CV exists yet (browsing from landing), create one with sample data
+    if (!cv) {
+      const sampleId = useCVStore.getState().loadSample();
+      useCVStore.getState().setTemplate(id);
+    } else {
+      setTemplate(id);
+    }
     setView("editor");
     window.scrollTo({ top: 0 });
   };

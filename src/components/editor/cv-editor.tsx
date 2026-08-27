@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Eye, Download, Edit3, Palette, LayoutPanelTop, X, Check as CheckIcon } from "lucide-react";
+import { ArrowLeft, Check, Eye, Download, Edit3, Palette, LayoutPanelTop } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { PreviewWorkspace } from "@/components/editor/preview-workspace";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore, persistCurrent } from "@/lib/store/cv-store";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import { DesignPanel } from "@/components/editor/design-panel";
 import { LayoutPanel } from "@/components/editor/layout-panel";
 import { DownloadPanel } from "@/components/editor/download-panel";
 import { TemplateChangeModal } from "@/components/editor/template-change-modal";
+import { CVRenderer } from "@/components/templates/cv-renderer";
 
 type Tab = "content" | "design" | "layout";
 type MobileTab = "edit" | "preview" | "design";
@@ -21,7 +22,6 @@ type MobileTab = "edit" | "preview" | "design";
 export function CVEditor() {
   const [tab, setTab] = React.useState<Tab>("content");
   const [mobileTab, setMobileTab] = React.useState<MobileTab>("edit");
-  const [zoom, setZoom] = React.useState(0.85);
   const [showDownload, setShowDownload] = React.useState(false);
   const [showTemplateChange, setShowTemplateChange] = React.useState(false);
   const [highlightSection, setHighlightSection] = React.useState<string | null>(null);
@@ -114,7 +114,7 @@ export function CVEditor() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <BrandButton variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => setMobileTab("preview")}>
+            <BrandButton variant="ghost" size="sm" onClick={() => setView("preview")}>
               <Eye className="size-4" /> Preview
             </BrandButton>
             <BrandButton variant="primary" size="sm" onClick={() => setShowDownload(true)}>
@@ -157,9 +157,9 @@ export function CVEditor() {
           </div>
         </div>
 
-        {/* Right: preview */}
-        <div className="flex-1 min-w-0 bg-[#181818] relative overflow-hidden">
-          <PreviewArea cv={cv} zoom={zoom} setZoom={setZoom} highlightSection={highlightSection} switching={switching} />
+        {/* Right: preview — auto-fit workspace, never requires browser zoom */}
+        <div className="flex-1 min-w-0 relative overflow-hidden">
+          <PreviewWorkspace cv={cv} highlightSection={highlightSection} switching={switching} defaultMode="page" />
         </div>
       </div>
 
@@ -185,13 +185,19 @@ export function CVEditor() {
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {mobileTab === "edit" && <ContentPanel onActiveSection={setHighlightSection} />}
-          {mobileTab === "design" && <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />}
-          {mobileTab === "preview" && (
-            <div className="bg-[#181818] p-4">
-              <PreviewArea cv={cv} zoom={0.6} setZoom={() => {}} mobile highlightSection={highlightSection} switching={switching} />
+        <div className="flex-1 min-h-0 overflow-hidden relative">
+          {mobileTab === "edit" && (
+            <div className="h-full overflow-y-auto">
+              <ContentPanel onActiveSection={setHighlightSection} />
             </div>
+          )}
+          {mobileTab === "design" && (
+            <div className="h-full overflow-y-auto">
+              <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />
+            </div>
+          )}
+          {mobileTab === "preview" && (
+            <PreviewWorkspace cv={cv} highlightSection={highlightSection} switching={switching} defaultMode="width" />
           )}
         </div>
       </div>
@@ -208,7 +214,7 @@ export function CVEditor() {
         )}
       </AnimatePresence>
 
-      {/* Hidden print source for PDF export */}
+      {/* Hidden print source for PDF export — real A4, unaffected by preview zoom */}
       <div
         id="nirvash-print-source"
         aria-hidden="true"
@@ -216,52 +222,6 @@ export function CVEditor() {
       >
         <CVRenderer cv={cv} width={794} showShadow={false} />
       </div>
-    </div>
-  );
-}
-
-function PreviewArea({
-  cv,
-  zoom,
-  setZoom,
-  mobile = false,
-  highlightSection,
-  switching,
-}: {
-  cv: ReturnType<typeof useCVStore.getState>["current"];
-  zoom: number;
-  setZoom: (z: number) => void;
-  mobile?: boolean;
-  highlightSection?: string | null;
-  switching?: boolean;
-}) {
-  if (!cv) return null;
-  return (
-    <div className="h-full w-full overflow-auto flex flex-col">
-      <div className="flex-1 flex items-start justify-center p-4 sm:p-8 lg:p-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={cv.design.templateId}
-            initial={switching ? { opacity: 0, scale: 0.96, y: 8 } : false}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={switching ? { opacity: 0, scale: 0.97, y: -8 } : { opacity: 1 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
-          >
-            <CVRenderer cv={cv} width={794} highlightSection={highlightSection} />
-          </motion.div>
-        </AnimatePresence>
-      </div>
-      {/* floating zoom controls */}
-      {!mobile && (
-        <div className="sticky bottom-4 mx-auto mb-4 flex items-center gap-1 rounded-[10px] border border-white/12 bg-[#1a1a1a]/90 backdrop-blur-md px-1.5 py-1 shadow-lg w-fit self-center">
-          <button onClick={() => setZoom(Math.max(0.4, zoom - 0.1))} className="size-8 rounded-md hover:bg-white/10 flex items-center justify-center text-white/70" aria-label="Zoom out">−</button>
-          <span className="text-[12px] font-medium text-white/70 w-12 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(Math.min(1.5, zoom + 0.1))} className="size-8 rounded-md hover:bg-white/10 flex items-center justify-center text-white/70" aria-label="Zoom in">+</button>
-          <div className="w-px h-5 bg-white/10 mx-0.5" />
-          <button onClick={() => setZoom(0.85)} className="px-2.5 h-8 rounded-md hover:bg-white/10 text-[12px] font-medium text-white/70" aria-label="Fit">Fit</button>
-        </div>
-      )}
     </div>
   );
 }
