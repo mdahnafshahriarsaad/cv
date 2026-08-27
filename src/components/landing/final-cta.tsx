@@ -27,7 +27,7 @@ export function FinalCTA() {
       >
         <source src="/hero-video/background.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 bg-[#212121]/80" />
+      <div className="absolute inset-0 bg-[#212121]/55" />
       <div className="absolute inset-0 hero-atmosphere" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40 text-center">

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Reveal } from "@/components/shared/reveal";
 import { BrandButton } from "@/components/shared/brand-button";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { CVPreview } from "@/components/templates/cv-preview";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { TEMPLATES, getTemplate } from "@/components/templates/registry";
 import { useAppStore } from "@/lib/store/app-store";
@@ -40,21 +40,21 @@ export function TemplateShowcase() {
 
         <div className="mt-14 grid md:grid-cols-3 gap-5 lg:gap-7">
           {featured.map((t, i) => {
-            const cv = createSampleCV();
+            const cv = createSampleCV(t.photoShape !== "none");
             cv.design.templateId = t.id;
             return (
               <Reveal key={t.id} delay={i * 0.1}>
                 <button
                   onClick={browse}
-                  className="group relative block w-full text-left rounded-[14px] overflow-hidden border border-black/8 bg-[#F5F5F5] transition-all hover:border-nirvash-red/30 hover:shadow-xl"
+                  className="group relative block w-full text-left rounded-[14px] overflow-hidden border border-black/8 bg-[#F5F5F5] transition-all duration-300 hover:border-nirvash-red/30 hover:shadow-xl hover:-translate-y-1"
                 >
-                  {/* preview */}
-                  <div className="relative overflow-hidden bg-[#F5F5F5] flex items-center justify-center" style={{ height: 420 }}>
-                    <div className="origin-top transition-transform duration-500 group-hover:scale-105" style={{ transform: "scale(0.42)" }}>
-                      <CVRenderer cv={cv} width={794} showShadow={false} />
+                  {/* preview — full miniature A4 CV */}
+                  <div className="relative overflow-hidden bg-[#F5F5F5] flex items-center justify-center py-4">
+                    <div className="transition-transform duration-500 group-hover:scale-[1.03]">
+                      <CVPreview cv={cv} scale={0.42} showShadow={false} />
                     </div>
                     {/* hover overlay */}
-                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/35 transition-all duration-300 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/35 transition-all duration-300 flex items-center justify-center pointer-events-none">
                       <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-2 rounded-[10px] bg-nirvash-red px-5 py-2.5 text-sm font-semibold text-white">
                         Use Template <ArrowRight className="size-4" />
                       </span>

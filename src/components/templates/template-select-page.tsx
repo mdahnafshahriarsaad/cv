@@ -6,11 +6,16 @@ import { ArrowLeft, ArrowRight, Star, X, ZoomIn, ZoomOut } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
 import { CVRenderer } from "@/components/templates/cv-renderer";
+import { LazyCVPreview } from "@/components/templates/cv-preview";
 import { TEMPLATES, FILTER_CATEGORIES, getTemplate, templatesByCollection } from "@/components/templates/registry";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore } from "@/lib/store/cv-store";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { cn } from "@/lib/utils";
+
+// Preview scale: 794 * 0.34 ≈ 270px wide, 1123 * 0.34 ≈ 382px tall.
+// Card preview area = ~382px tall. This fills the card with a real miniature CV.
+const PREVIEW_SCALE = 0.34;
 
 export function TemplateSelectPage() {
   const [filter, setFilter] = React.useState<string>("All");
@@ -53,7 +58,7 @@ export function TemplateSelectPage() {
 
   const featured = TEMPLATES.find((t) => t.id === "vertex")!;
   const featuredCV = React.useMemo(() => {
-    const base = createSampleCV();
+    const base = createSampleCV(true);
     base.design.templateId = featured.id;
     return base;
   }, [featured]);
@@ -109,8 +114,11 @@ export function TemplateSelectPage() {
             </div>
           </div>
           <div className="order-1 lg:order-2 flex justify-center">
-            <div className="origin-top cursor-pointer transition-transform hover:scale-[1.02]" style={{ transform: "scale(0.55)" }} onClick={() => setPreviewId(featured.id)}>
-              <CVRenderer cv={featuredCV} width={794} />
+            <div
+              className="cursor-pointer transition-transform hover:scale-[1.02]"
+              onClick={() => setPreviewId(featured.id)}
+            >
+              <LazyCVPreview cv={featuredCV} scale={0.5} />
             </div>
           </div>
         </div>
@@ -151,14 +159,16 @@ export function TemplateSelectPage() {
           {/* Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
             {filtered.map((t) => {
-              const previewCV = createSampleCV();
-              previewCV.design.templateId = t.id;
               const isFav = favorites.has(t.id);
+              // photo-capable templates render with a sample photo
+              const previewCV = createSampleCV(t.photoShape !== "none");
+              previewCV.design.templateId = t.id;
               return (
                 <div
                   key={t.id}
-                  className="group relative rounded-[12px] overflow-hidden border border-white/8 bg-[#1a1a1a] transition-all hover:border-nirvash-red/35 hover:shadow-xl hover:-translate-y-0.5"
+                  className="group relative rounded-[12px] overflow-hidden border border-white/8 bg-[#1a1a1a] transition-all duration-300 hover:border-nirvash-red/35 hover:shadow-xl hover:-translate-y-1"
                 >
+                  {/* Favorite */}
                   <button
                     onClick={() => toggleFav(t.id)}
                     className={cn("absolute top-2.5 right-2.5 z-20 size-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm", isFav ? "bg-nirvash-red text-white" : "bg-black/40 text-white/50 hover:text-white")}
@@ -166,28 +176,32 @@ export function TemplateSelectPage() {
                   >
                     <Star className={cn("size-3.5", isFav && "fill-current")} />
                   </button>
+
+                  {/* Preview area — full miniature CV */}
                   <div
-                    className="relative overflow-hidden bg-[#1a1a1a] flex items-center justify-center cursor-pointer"
-                    style={{ height: 360 }}
+                    className="relative overflow-hidden bg-[#1a1a1a] flex items-center justify-center cursor-pointer py-3"
                     onClick={() => setPreviewId(t.id)}
                   >
-                    <div className="origin-top transition-transform duration-500 group-hover:scale-105" style={{ transform: "scale(0.38)" }}>
-                      <CVRenderer cv={previewCV} width={794} showShadow={false} />
+                    <div className="transition-transform duration-500 group-hover:scale-[1.03]">
+                      <LazyCVPreview cv={previewCV} scale={PREVIEW_SCALE} />
                     </div>
-                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/45 transition-all duration-300 flex items-center justify-center">
-                      <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-[10px] bg-white/10 backdrop-blur border border-white/25 px-3.5 py-2 text-[12px] font-medium text-white">
+                    {/* hover overlay + Preview button */}
+                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/35 transition-all duration-300 flex items-center justify-center pointer-events-none">
+                      <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-[10px] bg-white/15 backdrop-blur border border-white/30 px-4 py-2 text-[12px] font-semibold text-white pointer-events-none">
                         <ZoomIn className="size-3.5" /> Preview
                       </span>
                     </div>
                   </div>
-                  <div className="p-3.5 flex items-center justify-between bg-white/[0.02]">
+
+                  {/* Footer */}
+                  <div className="p-3.5 flex items-center justify-between bg-white/[0.02] border-t border-white/5">
                     <div className="min-w-0">
                       <h4 className="text-[14px] font-bold tracking-tight">{t.name}</h4>
-                      <p className="text-[11px] text-white/40 truncate">{t.collection}</p>
+                      <p className="text-[11px] text-white/40 truncate">{t.collection}{t.badges?.length ? ` · ${t.badges[0]}` : ""}</p>
                     </div>
                     <button
                       onClick={() => selectTemplate(t.id)}
-                      className="text-[11px] font-semibold text-nirvash-red hover:text-white transition-colors shrink-0 inline-flex items-center gap-1"
+                      className="text-[11px] font-semibold text-nirvash-red hover:text-white transition-colors shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-nirvash-red/10"
                     >
                       Use <ArrowRight className="size-3" />
                     </button>
@@ -221,10 +235,10 @@ function PreviewModal({ templateId, onClose, onUse }: { templateId: string; onCl
   const [zoom, setZoom] = React.useState(0.65);
   const t = getTemplate(templateId);
   const previewCV = React.useMemo(() => {
-    const base = createSampleCV();
+    const base = createSampleCV(t.photoShape !== "none");
     base.design.templateId = templateId;
     return base;
-  }, [templateId]);
+  }, [templateId, t.photoShape]);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

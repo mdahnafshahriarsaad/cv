@@ -208,84 +208,97 @@ export function createEmptyCV(name = "Untitled CV"): CVDocument {
 }
 
 // Sample CV used for template previews & demo content
-export function createSampleCV(): CVDocument {
+export function createSampleCV(withPhoto = false): CVDocument {
   const base = createEmptyCV("Frontend Developer CV");
   base.personalInfo = {
-    fullName: "Alex Johnson",
-    professionalTitle: "Frontend Developer",
-    email: "alex.johnson@email.com",
-    phone: "+1 (555) 248-1990",
+    fullName: "Alex Morgan",
+    professionalTitle: "Senior Product Designer",
+    email: "alex.morgan@email.com",
+    phone: "+1 (415) 555-0142",
     location: "San Francisco, CA",
     links: [
-      { id: uid(), type: "linkedin", url: "linkedin.com/in/alexjohnson" },
-      { id: uid(), type: "github", url: "github.com/alexjohnson" },
-      { id: uid(), type: "portfolio", url: "alexjohnson.dev" },
+      { id: uid(), type: "linkedin", url: "linkedin.com/in/alexmorgan" },
+      { id: uid(), type: "portfolio", url: "alexmorgan.design" },
+      { id: uid(), type: "github", url: "github.com/alexmorgan" },
     ],
-    photo: null,
+    photo: withPhoto
+      ? { dataUrl: "/sample-avatar.jpg", zoom: 1, offsetX: 0, offsetY: 0 }
+      : null,
   };
   base.summary =
-    "Frontend Developer with 4+ years of experience building responsive, accessible web applications. Passionate about clean architecture, design systems, and delivering delightful user experiences.";
+    "Multidisciplinary product designer with 8+ years of experience creating intuitive digital products and scalable design systems. Passionate about turning complex problems into elegant, human-centered experiences.";
   base.profileType = "experienced";
   base.experience = [
     {
       id: uid(),
-      jobTitle: "Senior Frontend Developer",
-      company: "Nimbus Labs",
+      jobTitle: "Senior Product Designer",
+      company: "Lumen",
       location: "San Francisco, CA",
-      startDate: "2023-02",
+      startDate: "2022-03",
       endDate: "",
       current: true,
       responsibilities:
-        "Led the rebuild of the core design system used across 6 products, improving delivery speed by 40%.\nMentored 4 junior developers and established frontend best practices and code review standards.\nDrove migration from legacy SPA to Next.js App Router, cutting load times by 35%.",
+        "Led the end-to-end redesign of the core product, increasing activation by 28%.\nBuilt and maintained a 120-component design system adopted across 5 product teams.\nMentored 3 junior designers and established the team's design review process.",
     },
     {
       id: uid(),
-      jobTitle: "Frontend Developer",
-      company: "Brightwave Studio",
+      jobTitle: "Product Designer",
+      company: "Northwind",
       location: "Remote",
-      startDate: "2020-06",
-      endDate: "2023-01",
+      startDate: "2019-06",
+      endDate: "2022-02",
       current: false,
       responsibilities:
-        "Built 20+ client web applications using React and TypeScript.\nCollaborated with designers to implement pixel-perfect, accessible UIs.\nIntroduced automated testing that reduced production bugs by 50%.",
+        "Designed and shipped 15+ features from research to handoff.\nRan usability tests that informed a 40% reduction in support tickets.\nCollaborated closely with engineering to implement pixel-perfect, accessible UIs.",
+    },
+    {
+      id: uid(),
+      jobTitle: "Junior Designer",
+      company: "Atelier",
+      location: "Oakland, CA",
+      startDate: "2017-01",
+      endDate: "2019-05",
+      current: false,
+      responsibilities:
+        "Created marketing sites and brand systems for early-stage startups.\nProduced interactive prototypes that secured 3 major client contracts.",
     },
   ];
   base.education = [
     {
       id: uid(),
-      degree: "B.Sc. in Computer Science",
-      fieldOfStudy: "Computer Science",
-      institution: "University of California, Berkeley",
-      location: "Berkeley, CA",
-      startDate: "2016-09",
-      endDate: "2020-05",
-      description: "Graduated with honors. Focus on human-computer interaction and web technologies.",
+      degree: "BFA, Industrial Design",
+      fieldOfStudy: "Industrial Design",
+      institution: "California College of the Arts",
+      location: "San Francisco, CA",
+      startDate: "2013-09",
+      endDate: "2017-05",
+      description: "Graduated with honors. Focus on interaction design and human-centered research.",
     },
   ];
   base.skills = [
-    { id: uid(), name: "React" },
-    { id: uid(), name: "TypeScript" },
-    { id: uid(), name: "Next.js" },
-    { id: uid(), name: "Tailwind CSS" },
-    { id: uid(), name: "Accessibility" },
+    { id: uid(), name: "Figma" },
+    { id: uid(), name: "Product Strategy" },
+    { id: uid(), name: "UI Design" },
+    { id: uid(), name: "UX Research" },
     { id: uid(), name: "Design Systems" },
-    { id: uid(), name: "Node.js" },
+    { id: uid(), name: "Prototyping" },
+    { id: uid(), name: "Accessibility" },
   ];
   base.projects = [
     {
       id: uid(),
-      name: "Nimbus UI Kit",
-      description: "Open-source React component library with 60+ accessible components.",
-      technologies: "React, TypeScript, Radix, Tailwind",
-      link: "github.com/nimbus/ui-kit",
+      name: "Atlas Design System",
+      description: "Open-source design system with 120+ accessible components and tokens.",
+      technologies: "Figma, React, Storybook",
+      link: "atlas.design",
     },
   ];
   base.certifications = [
-    { id: uid(), name: "AWS Certified Developer – Associate", issuer: "Amazon Web Services", date: "2023-08" },
+    { id: uid(), name: "Certified UX Professional", issuer: "NN/g", date: "2021-05" },
   ];
   base.languages = [
     { id: uid(), name: "English", level: "Native" },
-    { id: uid(), name: "Spanish", level: "Professional" },
+    { id: uid(), name: "French", level: "Professional" },
   ];
   base.design.templateId = "vertex";
   return base;

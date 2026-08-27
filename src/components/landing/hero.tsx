@@ -43,7 +43,7 @@ export function Hero() {
 
   return (
     <section id="home" ref={containerRef} className="relative min-h-screen w-full overflow-hidden bg-[#212121]">
-      {/* Layer 1: background video */}
+      {/* Layer 1: background video — 6px blur, visible */}
       <motion.video
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay muted loop playsInline preload="auto"
@@ -53,9 +53,9 @@ export function Hero() {
         <source src="/hero-video/background.mp4" type="video/mp4" />
       </motion.video>
 
-      {/* Layer 2: dark overlay */}
-      <div className="absolute inset-0 bg-[#212121]/72" />
-      {/* Layer 3: subtle red gradient */}
+      {/* Layer 2: lighter dark overlay so video stays visible */}
+      <div className="absolute inset-0 bg-[#212121]/45" />
+      {/* Layer 3: subtle red gradient atmosphere */}
       <div className="absolute inset-0 hero-atmosphere" />
 
       {/* Layer 4: content */}

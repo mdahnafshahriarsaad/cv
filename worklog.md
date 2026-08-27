@@ -54,3 +54,28 @@ Stage Summary:
 - Lint clean, no console errors, dev server healthy
 - Mobile responsive verified (390px hero + builder + editor tabs)
 - All flows working: landing → create → guided/form → templates (54) → editor → download
+
+---
+Task ID: 11
+Agent: orchestrator
+Task: Fix blank template previews + make hero video visible
+
+Work Log:
+- Root cause: template cards used `transform: scale(0.38)` with `origin-top` inside flex-centered containers — the CVRenderer's 1123px minHeight + flex centering caused only the top sliver to show, rest clipped/empty
+- Fix: built CVPreview component with a sized wrapper (width*scale × height*scale) + inner content scaled from top-left — no clipping, correct A4 proportions
+- Built LazyCVPreview with IntersectionObserver (200px rootMargin): shows A4Skeleton (shimmer) until near viewport, then renders full CV and stays mounted
+- Added shimmer keyframe animation to globals.css for skeleton loading state
+- Updated createSampleCV: Alex Morgan / Senior Product Designer with 3 experiences, education, 7 skills, project, certification, languages; added withPhoto param that attaches /sample-avatar.jpg (generated via image-generation skill) for photo-capable templates
+- Rewrote template-select-page: cards now show full miniature A4 CV (scale 0.34) in 75-85% preview area + footer with name/collection/Use; hover lift (-translate-y-1) + scale(1.03) + Preview button overlay; featured uses LazyCVPreview scale 0.5
+- Fixed landing template-showcase to use CVPreview (was broken same way)
+- Fixed template-change-modal to use CVPreview + pass photo for photo-capable templates
+- Hero video: reduced dark overlay from /72 to /45, reduced hero-atmosphere bottom gradient from 0.85 to 0.55 — video now visible (swirling red/blue texture) while headline stays readable
+- Final CTA: reduced overlay from /80 to /55
+
+Stage Summary:
+- All 54 templates now render full miniature CVs with visible text (name, experience, education, skills, section headings) — verified via Agent Browser
+- Templates visually distinct: Vertex=header-band, Apex=centered-single, Crimson=left-sidebar, Timeline=vertical-flow, Executive=circle-photo-sidebar
+- Photo-capable templates (Executive, Studio, Prime, Profile, Orbit) show the sample headshot
+- Lazy loading works: off-screen cards show A4 shimmer skeletons, render full CV on scroll into view
+- Hero video visible with 6px blur maintained; text readable (9/10 premium rating)
+- Lint clean, no console errors

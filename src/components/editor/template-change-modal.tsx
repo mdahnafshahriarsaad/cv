@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { X, ArrowRight } from "lucide-react";
 import { BrandButton } from "@/components/shared/brand-button";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { CVPreview } from "@/components/templates/cv-preview";
 import { TEMPLATES, getTemplate } from "@/components/templates/registry";
 import { useCVStore } from "@/lib/store/cv-store";
 import { createSampleCV } from "@/lib/cv-data/types";
@@ -21,7 +21,8 @@ export function TemplateChangeModal({ onClose }: { onClose: () => void }) {
   const isSame = selected === cv.design.templateId;
 
   const previewCV = (id: string) => {
-    const base = createSampleCV();
+    const def = getTemplate(id);
+    const base = createSampleCV(def.photoShape !== "none");
     base.design.templateId = id;
     base.design.accentColor = cv.design.accentColor;
     return base;
@@ -65,10 +66,8 @@ export function TemplateChangeModal({ onClose }: { onClose: () => void }) {
             <div>
               <p className="text-[11px] font-bold tracking-[0.18em] text-white/35 uppercase mb-3">Current</p>
               <div className="rounded-[10px] border border-white/10 overflow-hidden bg-[#1a1a1a]">
-                <div className="flex items-center justify-center overflow-hidden" style={{ height: 340 }}>
-                  <div className="origin-top" style={{ transform: "scale(0.4)" }}>
-                    <CVRenderer cv={previewCV(current.id)} width={794} showShadow={false} />
-                  </div>
+                <div className="flex items-center justify-center py-3">
+                  <CVPreview cv={previewCV(current.id)} scale={0.36} showShadow={false} />
                 </div>
                 <div className="px-4 py-3 border-t border-white/8 flex items-center justify-between">
                   <span className="text-[14px] font-semibold">{current.name}</span>
@@ -80,10 +79,8 @@ export function TemplateChangeModal({ onClose }: { onClose: () => void }) {
             <div>
               <p className="text-[11px] font-bold tracking-[0.18em] text-nirvash-red uppercase mb-3">New</p>
               <div className={cn("rounded-[10px] border overflow-hidden bg-[#1a1a1a]", isSame ? "border-white/10" : "border-nirvash-red/40")}>
-                <div className="flex items-center justify-center overflow-hidden" style={{ height: 340 }}>
-                  <div className="origin-top" style={{ transform: "scale(0.4)" }}>
-                    <CVRenderer cv={previewCV(newT.id)} width={794} showShadow={false} />
-                  </div>
+                <div className="flex items-center justify-center py-3">
+                  <CVPreview cv={previewCV(newT.id)} scale={0.36} showShadow={false} />
                 </div>
                 <div className="px-4 py-3 border-t border-white/8 flex items-center justify-between">
                   <span className="text-[14px] font-semibold">{newT.name}</span>
