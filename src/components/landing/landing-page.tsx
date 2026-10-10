@@ -11,7 +11,7 @@ import { TwoMethods } from "@/components/landing/two-methods";
 import { TemplateShowcase } from "@/components/landing/template-showcase";
 import { AIFeature } from "@/components/landing/ai-feature";
 import { StatsSection } from "@/components/landing/stats-section";
-import { TestimonialMarquee } from "@/components/landing/testimonial-marquee";
+import { CVSliderSection } from "@/components/landing/cv-slider-section";
 import { FinalCTA } from "@/components/landing/final-cta";
 
 export function LandingPage() {
@@ -39,9 +39,9 @@ export function LandingPage() {
         <HowItWorks />
         <TwoMethods />
         <TemplateShowcase />
+        <CVSliderSection />
         <StatsSection />
         <AIFeature />
-        <TestimonialMarquee />
         <FinalCTA />
       </main>
       <Footer onNavigate={onNavigate} />

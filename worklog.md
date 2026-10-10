@@ -283,3 +283,29 @@ Stage Summary:
 - Template showcase cards now have 3D tilt on hover via Atropos
 - How It Works heading uses GSAP word-by-word reveal
 - Lint clean, no console errors, all sections verified rendering
+
+---
+Task ID: 19
+Agent: orchestrator
+Task: Remove fake info, add infinite CV slider, add photos to all templates
+
+Work Log:
+- Removed fake testimonial marquee (had fake names: Sarah Chen/Figma, Marcus Webb/Vercel, etc. with fake quotes) — deleted testimonial-marquee.tsx
+- Updated createSampleCV: photo is now ALWAYS included (removed withPhoto param logic), uses /sample-avatar.jpg
+- Generated second sample photo (/sample-avatar-2.jpg) for variety
+- Updated ALL 54 templates: changed every photoShape: "none" → photoShape: "circle" (46 templates updated) — now every template supports and renders profile photos
+- Built CVSliderSection: infinite CV template slider using Embla Carousel (loop: true, align: center)
+  - 12 diverse templates: vertex, apex, crimson, executive, canvas, nova, timeline, prism, stack, launch, journal, orbit
+  - Each slide shows a real CVPreview with the sample photo
+  - Active card is full-scale with red border + glow shadow; inactive cards scale-95 + opacity-70
+  - Auto-advances every 4s, pauses on hover
+  - Prev/Next arrow buttons + dot indicators (active dot expands to pill)
+  - Click any card → navigates to templates page
+- Added CVSliderSection to landing page (between TemplateShowcase and StatsSection)
+
+Stage Summary:
+- Fake testimonials removed entirely
+- Infinite CV slider with 12 real template previews, auto-advance, controls
+- All 54 templates now render profile photos (was 8, now 54)
+- 13 profile images confirmed rendering across the page
+- Lint clean, no console errors

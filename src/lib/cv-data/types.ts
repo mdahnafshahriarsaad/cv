@@ -208,7 +208,8 @@ export function createEmptyCV(name = "Untitled CV"): CVDocument {
 }
 
 // Sample CV used for template previews & demo content
-export function createSampleCV(withPhoto = false): CVDocument {
+// Always includes a photo — every template supports photos
+export function createSampleCV(_withPhoto = true): CVDocument {
   const base = createEmptyCV("Frontend Developer CV");
   base.personalInfo = {
     fullName: "Alex Morgan",
@@ -221,9 +222,7 @@ export function createSampleCV(withPhoto = false): CVDocument {
       { id: uid(), type: "portfolio", url: "alexmorgan.design" },
       { id: uid(), type: "github", url: "github.com/alexmorgan" },
     ],
-    photo: withPhoto
-      ? { dataUrl: "/sample-avatar.jpg", zoom: 1, offsetX: 0, offsetY: 0 }
-      : null,
+    photo: { dataUrl: "/sample-avatar.jpg", zoom: 1, offsetX: 0, offsetY: 0 },
   };
   base.summary =
     "Multidisciplinary product designer with 8+ years of experience creating intuitive digital products and scalable design systems. Passionate about turning complex problems into elegant, human-centered experiences.";
