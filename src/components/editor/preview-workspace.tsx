@@ -136,7 +136,7 @@ export function PreviewWorkspace({
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div ref={cvRef}>
-                  <CVRenderer cv={cv} width={A4_W} highlightSection={highlightSection} />
+                  <CVRenderer cv={cv} width={A4_W} highlightSection={highlightSection} fitContent />
                 </div>
               </motion.div>
             </AnimatePresence>

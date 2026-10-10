@@ -159,7 +159,7 @@ export function CVEditor() {
 
         {/* Right: preview — auto-fit workspace, never requires browser zoom */}
         <div className="flex-1 min-w-0 relative overflow-hidden">
-          <PreviewWorkspace cv={cv} highlightSection={highlightSection} switching={switching} defaultMode="page" />
+          <PreviewWorkspace cv={cv} highlightSection={highlightSection} switching={switching} defaultMode="width" />
         </div>
       </div>
 

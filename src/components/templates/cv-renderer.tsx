@@ -267,9 +267,11 @@ export interface CVRendererProps {
   showShadow?: boolean;
   /** highlight a section by key */
   highlightSection?: string | null;
+  /** when true, the document height shrinks to fit content (no A4 minHeight) */
+  fitContent?: boolean;
 }
 
-export function CVRenderer({ cv, className, width = 794, showShadow = true, highlightSection }: CVRendererProps) {
+export function CVRenderer({ cv, className, width = 794, showShadow = true, highlightSection, fitContent = false }: CVRendererProps) {
   const def = getTemplate(cv.design.templateId);
   const { palette: pal } = def;
   // user override of accent color
@@ -288,7 +290,7 @@ export function CVRenderer({ cv, className, width = 794, showShadow = true, high
 
   const containerStyle: React.CSSProperties = {
     width: W,
-    minHeight: H,
+    minHeight: fitContent ? "auto" : H,
     background: effectiveDef.palette.paper,
     color: effectiveDef.palette.ink,
     fontFamily: fonts.body,

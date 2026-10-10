@@ -206,3 +206,33 @@ Stage Summary:
 - Navigation: compact floating glass pill that expands with spring physics + staggered reveals + numbered indices (9/10 VLM)
 - CV stack: multi-layer 3D depth, floating badges, ambient glow, cursor spotlight sheen, blur-in entrance (9/10 VLM)
 - Lint clean, no console errors
+
+---
+Task ID: 16
+Agent: orchestrator
+Task: Fix broken CV download (black box, cut-off text) + preview not matching page size
+
+Work Log:
+- Analyzed downloaded PDF: massive black rectangle (sidebar background without Tailwind CSS), truncated email, layout completely broken
+- Root cause: download opened a NEW window and copied innerHTML — but the new window had NO Tailwind CSS, so all layout classes (grid, flex, padding) failed, causing backgrounds to render as solid blocks and text to overflow
+- Fix: switched from new-window approach to window.print() on the CURRENT page
+  - Added @media print block to globals.css:
+    - body * { visibility: hidden } — hides all UI
+    - #nirvash-print-source, #nirvash-print-source * { visibility: visible } — shows only the CV
+    - #nirvash-print-source { position: fixed; left: 0; top: 0; width: 210mm; z-index: 99999; overflow: visible } — resets from off-screen
+    - * { -webkit-print-color-adjust: exact } — forces backgrounds (sidebar colors, accents) to print
+    - @page { size: A4; margin: 0 } — proper A4 page
+  - All Tailwind classes + inline styles remain available since we're printing the current page
+  - Rewrote download-panel.tsx to call window.print() instead of opening a new window
+  - Added CVRenderer to preview page's print source (was empty)
+- Preview fix:
+  - Added fitContent prop to CVRenderer — when true, removes minHeight: H (A4 height) so document shrinks to actual content height (no empty white space)
+  - PreviewWorkspace now uses fitContent — document matches actual content size
+  - Changed editor inline preview defaultMode from "page" to "width" — CV fills the width, is larger and more readable
+  - Verified: preview rated 9/10 (fills width, readable, professional)
+
+Stage Summary:
+- Download: window.print() with @media print keeps all Tailwind styles — no more black boxes or cut-off text
+- Preview: fitContent mode removes empty A4 white space, Fit Width default makes CV larger and clearer
+- Print source verified: has content (1 child, 794px width, proper CVRenderer)
+- Lint clean, no console errors

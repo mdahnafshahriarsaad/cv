@@ -9,6 +9,7 @@ import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
 import { PreviewWorkspace } from "@/components/editor/preview-workspace";
 import { DownloadPanel } from "@/components/editor/download-panel";
+import { CVRenderer } from "@/components/templates/cv-renderer";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore, persistCurrent } from "@/lib/store/cv-store";
 import { AnimatePresence } from "framer-motion";
@@ -146,7 +147,7 @@ export function PreviewPage() {
         aria-hidden="true"
         style={{ position: "fixed", left: "-99999px", top: 0, pointerEvents: "none" }}
       >
-        {/* CVRenderer at full A4 for print; the visible PreviewWorkspace is separate */}
+        <CVRenderer cv={cv} width={794} showShadow={false} />
       </div>
     </div>
   );

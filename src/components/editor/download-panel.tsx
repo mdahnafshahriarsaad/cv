@@ -24,34 +24,13 @@ export function DownloadPanel({ onClose }: { onClose: () => void }) {
   const doDownload = () => {
     if (!cv) return;
     setStatus("preparing");
-    // open a print window with just the CV
+    // Use the browser's native print — @media print styles in globals.css
+    // hide everything except #nirvash-print-source and set A4 page size.
+    // The user can "Save as PDF" from the print dialog.
     setTimeout(() => {
-      const win = window.open("", "_blank", "width=900,height=1200");
-      if (!win) {
-        setStatus("done");
-        return;
-      }
-      const printCSS = `
-        @page { size: A4; margin: 0; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #fff; font-family: var(--font-geist-sans), Inter, system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      `;
-      // We render the CVRenderer to HTML by capturing a serialized version.
-      // Simpler: write a self-contained document using an iframe approach.
-      win.document.write(`<!DOCTYPE html><html><head><title>${cv.name} — Nirvash CV</title><style>${printCSS}</style></head><body><div id="root"></div></body></html>`);
-      win.document.close();
-      // Use React portal alternative: just instruct print of a generated DOM via srcdoc iframe is complex.
-      // Fallback: print this approach by writing the CV node's outerHTML.
-      const node = document.getElementById("nirvash-print-source");
-      if (node) {
-        win.document.getElementById("root")!.innerHTML = node.innerHTML;
-      }
-      setTimeout(() => {
-        win.focus();
-        win.print();
-        setStatus("done");
-      }, 300);
-    }, 600);
+      window.print();
+      setStatus("done");
+    }, 400);
   };
 
   if (!cv) return null;
@@ -87,7 +66,7 @@ export function DownloadPanel({ onClose }: { onClose: () => void }) {
               </svg>
             </div>
             <p className="text-[16px] font-semibold text-white">Your CV is ready.</p>
-            <p className="text-[13px] text-white/50 mt-1">If the print dialog didn't open, allow pop-ups and try again.</p>
+            <p className="text-[13px] text-white/50 mt-1">Choose "Save as PDF" in the print dialog to download.</p>
             <div className="mt-5 flex gap-2 justify-center">
               <BrandButton variant="secondary" size="md" onClick={() => setStatus("idle")}>Back</BrandButton>
               <BrandButton variant="primary" size="md" onClick={doDownload}>Try Again</BrandButton>
