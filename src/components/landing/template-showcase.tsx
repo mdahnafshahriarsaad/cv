@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Reveal } from "@/components/shared/reveal";
 import { MagneticButton } from "@/components/shared/magnetic-button";
+import { TiltCard } from "@/components/shared/tilt-card";
 import { CVPreview } from "@/components/templates/cv-preview";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { TEMPLATES, getTemplate } from "@/components/templates/registry";
@@ -39,12 +40,13 @@ export function TemplateShowcase() {
 
         {/* Asymmetric bento grid — NOT 3 equal columns */}
         <div className="mt-16 grid md:grid-cols-5 gap-4 lg:gap-6">
-          {/* Large featured template (Vertex) — spans 3 columns */}
+          {/* Large featured template (Vertex) — spans 3 columns, with 3D tilt */}
           <Reveal className="md:col-span-3 md:row-span-2">
-            <button
-              onClick={browse}
-              className="group relative block w-full h-full text-left rounded-[16px] overflow-hidden border border-black/8 bg-[#F5F5F5] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-nirvash-red/30 hover:shadow-[0_20px_40px_-15px_rgba(33,33,33,0.15)] hover:-translate-y-1"
-            >
+            <TiltCard className="group relative block w-full h-full text-left rounded-[16px] overflow-hidden border border-black/8 bg-[#F5F5F5]" highlightColor="rgba(255,67,54,0.15)">
+              <button
+                onClick={browse}
+                className="block w-full h-full"
+              >
               <div className="relative overflow-hidden bg-[#F5F5F5] flex items-center justify-center py-8 h-[440px]">
                 <div className="transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]">
                   <CVPreview cv={(() => { const c = createSampleCV(featured[0].photoShape !== "none"); c.design.templateId = featured[0].id; return c; })()} scale={0.48} showShadow={false} />
@@ -68,18 +70,20 @@ export function TemplateShowcase() {
                 )}
               </div>
             </button>
+            </TiltCard>
           </Reveal>
 
-          {/* Two smaller templates stacked — each spans 2 columns */}
+          {/* Two smaller templates stacked — each spans 2 columns, with 3D tilt */}
           {featured.slice(1).map((t, i) => {
             const cv = createSampleCV(t.photoShape !== "none");
             cv.design.templateId = t.id;
             return (
               <Reveal key={t.id} delay={0.1 + i * 0.1} className="md:col-span-2">
-                <button
-                  onClick={browse}
-                  className="group relative block w-full text-left rounded-[16px] overflow-hidden border border-black/8 bg-[#F5F5F5] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-nirvash-red/30 hover:shadow-[0_20px_40px_-15px_rgba(33,33,33,0.15)] hover:-translate-y-1"
-                >
+                <TiltCard className="group relative block w-full text-left rounded-[16px] overflow-hidden border border-black/8 bg-[#F5F5F5]" highlightColor="rgba(255,67,54,0.12)">
+                  <button
+                    onClick={browse}
+                    className="block w-full"
+                  >
                   <div className="relative overflow-hidden bg-[#F5F5F5] flex items-center justify-center py-4 h-[208px]">
                     <div className="transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]">
                       <CVPreview cv={cv} scale={0.22} showShadow={false} />
@@ -98,6 +102,7 @@ export function TemplateShowcase() {
                     </div>
                   </div>
                 </button>
+                </TiltCard>
               </Reveal>
             );
           })}

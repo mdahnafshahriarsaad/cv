@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion, useInView } from "framer-motion";
 import { Reveal } from "@/components/shared/reveal";
+import { GsapTextReveal } from "@/components/shared/gsap-text-reveal";
 
 const STEPS = [
   { n: "01", title: "Tell Us About Yourself", desc: "Answer simple questions or fill out your information." },
@@ -22,9 +23,9 @@ export function HowItWorks() {
           <span className="text-[11px] font-semibold tracking-[0.2em] text-nirvash-red uppercase">
             How It Works
           </span>
-          <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05]">
-            Creating a CV should be simple.
-          </h2>
+          <div className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05]">
+            <GsapTextReveal as="h2">Creating a CV should be simple.</GsapTextReveal>
+          </div>
           <p className="mt-4 text-white/55 text-base sm:text-lg">
             Three steps. One professional result.
           </p>

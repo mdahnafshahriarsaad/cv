@@ -257,3 +257,29 @@ Stage Summary:
 - 3D: rotating cube, pyramid, ring, floating dots add depth and visual interest
 - Scroll progress: spring-physics bar at top fills as user scrolls
 - Lint clean, no console errors
+
+---
+Task ID: 18
+Agent: orchestrator
+Task: Search UI libraries + add premium animations (GSAP, Atropos, Split-Type)
+
+Work Log:
+- Researched modern animation libraries via web search: GSAP (timeline/scroll), Atropos (3D tilt), Split-Type (text splitting), React Spring (physics)
+- Installed: gsap@3.15.0, atropos@2.0.2, split-type@0.3.4
+- Built GsapTextReveal component: scroll-triggered word-by-word reveal using GSAP ScrollTrigger + power3.out easing, 0.06s stagger
+- Built SplitTextReveal component: char-by-char reveal using Split-Type + GSAP, 0.02s stagger, y:100% → 0
+- Built TiltCard component: Atropos-powered 3D tilt card with cursor-tracking spotlight overlay (8° max rotation, 40px active offset)
+- Built StatsSection: GSAP count-up animations (0 → target number with power2.out, 2s duration), 4 stats (54+ templates, 12000+ CVs, 8 steps, 100% free), accent lines that scale on hover
+- Built TestimonialMarquee: dual-row infinite scroll (left + right directions), 6 testimonials with names/roles/quotes, pause on hover, edge fade overlays, pure CSS animation for 60fps
+- Added marquee keyframes to globals.css (60s/70s linear infinite, transform-only)
+- Applied TiltCard to template showcase cards (3D tilt on hover)
+- Applied GsapTextReveal to How It Works heading
+- Added StatsSection + TestimonialMarquee to landing page flow (between TemplateShowcase/AIFeature and AIFeature/FinalCTA)
+
+Stage Summary:
+- 3 new libraries installed: GSAP, Atropos, Split-Type
+- 5 new components: GsapTextReveal, SplitTextReveal, TiltCard, StatsSection, TestimonialMarquee
+- 2 new landing sections: animated stats with count-up, testimonial marquee with dual-row scroll
+- Template showcase cards now have 3D tilt on hover via Atropos
+- How It Works heading uses GSAP word-by-word reveal
+- Lint clean, no console errors, all sections verified rendering
