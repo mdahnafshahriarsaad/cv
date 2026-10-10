@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Menu, X } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
-import { BrandButton } from "@/components/shared/brand-button";
+import { MagneticCTA } from "@/components/shared/magnetic-button";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 
@@ -82,13 +82,12 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
 
           {/* Right actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="text-[13px] font-medium text-white/60 hover:text-white transition-colors px-3 py-2">
+            <button className="text-[13px] font-medium text-white/75 hover:text-white transition-colors px-3 py-2">
               Sign In
             </button>
-            <BrandButton variant="primary" size="sm" onClick={startCreate} className="group">
+            <MagneticCTA variant="primary" size="sm" onClick={startCreate}>
               Create My CV
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            </BrandButton>
+            </MagneticCTA>
           </div>
 
           {/* Mobile toggle */}
@@ -119,21 +118,13 @@ export function Navbar({ onNavigate }: { onNavigate?: (target: string) => void }
               <button className="block w-full text-left px-3 py-2.5 text-[13px] font-medium text-white/80 hover:text-white">
                 Sign In
               </button>
-              <BrandButton variant="primary" size="lg" className="w-full" onClick={startCreate}>
+              <MagneticCTA variant="primary" size="lg" className="w-full" onClick={startCreate}>
                 Create My CV
-              </BrandButton>
+              </MagneticCTA>
             </div>
           </div>
         </div>
       )}
     </header>
-  );
-}
-
-function ArrowRight({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
   );
 }

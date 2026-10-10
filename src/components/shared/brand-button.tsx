@@ -21,7 +21,7 @@ const brandButtonVariants = cva(
         primary:
           "bg-nirvash-red text-white btn-glow hover:bg-nirvash-ruby hover:-translate-y-0.5",
         secondary:
-          "bg-white/5 text-white border border-white/15 backdrop-blur-sm hover:bg-white/10 hover:border-white/25 hover:-translate-y-0.5",
+          "bg-white/8 text-white border border-white/20 backdrop-blur-md hover:bg-white/15 hover:border-white/35 hover:-translate-y-0.5",
         secondaryLight:
           "bg-[#212121]/5 text-[#212121] border border-[#212121]/10 hover:bg-[#212121]/10 hover:-translate-y-0.5",
         ghost: "text-current hover:bg-white/8",

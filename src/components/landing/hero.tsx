@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
+import { MagneticButton, MagneticCTA } from "@/components/shared/magnetic-button";
 import { CVRenderer } from "@/components/templates/cv-renderer";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { useAppStore } from "@/lib/store/app-store";
@@ -43,41 +43,60 @@ export function Hero() {
 
   return (
     <section id="home" ref={containerRef} className="relative min-h-[100dvh] w-full overflow-hidden bg-[#212121]">
-      {/* Layer 1: background video — 6px blur, visible */}
+      {/* Layer 1: background video — 6px blur, desaturated so it's atmospheric not loud */}
       <motion.video
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay muted loop playsInline preload="auto"
-        style={{ filter: "blur(6px)", y: yBack }}
+        style={{ filter: "blur(6px) saturate(0.55) brightness(0.7)", y: yBack }}
         aria-hidden="true"
       >
         <source src="/hero-video/background.mp4" type="video/mp4" />
       </motion.video>
 
-      {/* Layer 2: lighter dark overlay so video stays visible */}
-      <div className="absolute inset-0 bg-[#212121]/45" />
+      {/* Layer 2: dark overlay for text contrast */}
+      <div className="absolute inset-0 bg-[#212121]/55" />
       {/* Layer 3: subtle red gradient atmosphere */}
       <div className="absolute inset-0 hero-atmosphere" />
+      {/* Layer 3b: radial darkening behind left text block for readability */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 70% at 25% 50%, rgba(10,10,10,0.55) 0%, transparent 65%)",
+        }}
+      />
+      {/* Layer 3c: subtle dot grid pattern for sophistication */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.15]"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
 
       {/* Layer 4: content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 lg:pt-36 pb-20">
         <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-8 items-center">
           {/* Left content — layered entrance */}
           <motion.div style={{ y: yMid, opacity }}>
-            {/* badge */}
+            {/* eyebrow badge */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 backdrop-blur-sm"
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 backdrop-blur-md"
             >
-              <span className="size-1.5 rounded-full bg-nirvash-red animate-pulse" />
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-white/70 uppercase">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-nirvash-red opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full size-1.5 bg-nirvash-red" />
+              </span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] text-white/75 uppercase">
                 Nirvash CV Maker
               </span>
             </motion.div>
 
             {/* Headline lines */}
-            <h1 className="mt-6 text-white font-extrabold tracking-tight leading-[0.98] text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
+            <h1 className="mt-6 text-white font-extrabold tracking-tight leading-[0.98] text-5xl sm:text-6xl lg:text-7xl xl:text-[5rem]">
               {["Your Story", "Deserves"].map((line, i) => (
                 <motion.span
                   key={line}
@@ -99,34 +118,66 @@ export function Hero() {
               </motion.span>
             </h1>
 
+            {/* Animated red accent line beneath headline */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-5 h-[3px] w-16 rounded-full bg-nirvash-red origin-left"
+            />
+
             {/* Supporting text */}
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.65 }}
-              className="mt-6 text-base sm:text-lg text-white/60 leading-relaxed max-w-xl mx-auto lg:mx-0"
+              transition={{ duration: 0.7, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 text-base sm:text-lg text-white/80 leading-relaxed max-w-xl mx-auto lg:mx-0"
             >
               Create a professional CV without struggling with complicated forms, layouts, or design. Nirvash makes the process simple, guided, and effortless.
             </motion.p>
 
-            {/* Buttons */}
+            {/* Buttons — magnetic CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.7, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="mt-9 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
             >
-              <BrandButton variant="primary" size="xl" onClick={startCreate} className="group">
+              <MagneticCTA variant="primary" size="xl" onClick={startCreate}>
                 Create My CV
-                <ButtonArrow />
-              </BrandButton>
-              <BrandButton
+              </MagneticCTA>
+              <MagneticButton
                 variant="secondary"
                 size="xl"
                 onClick={() => document.getElementById("templates-showcase")?.scrollIntoView({ behavior: "smooth" })}
               >
                 Explore Templates
-              </BrandButton>
+              </MagneticButton>
+            </motion.div>
+
+            {/* Social proof */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 1, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-8 flex items-center gap-3 justify-center lg:justify-start"
+            >
+              {/* avatar stack */}
+              <div className="flex -space-x-2">
+                {["#FF4336", "#B71C1C", "#212121", "#475569"].map((c, i) => (
+                  <div
+                    key={i}
+                    className="size-7 rounded-full border-2 border-[#212121] flex items-center justify-center text-[10px] font-bold text-white"
+                    style={{ background: c }}
+                  >
+                    {["A", "M", "J", "S"][i]}
+                  </div>
+                ))}
+              </div>
+              <div className="text-left">
+                <p className="text-[12px] font-semibold text-white/85">Loved by 12,000+ professionals</p>
+                <p className="text-[11px] text-white/45">54 templates · Free forever · No sign-up</p>
+              </div>
             </motion.div>
           </motion.div>
 
@@ -140,27 +191,33 @@ export function Hero() {
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 24 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 1, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
               style={{ perspective: 1200 }}
               className="relative"
             >
+              {/* soft red glow behind CV stack */}
+              <div className="absolute inset-0 -m-20 rounded-full bg-nirvash-red/15 blur-3xl ambient-pulse pointer-events-none" />
               <motion.div style={{ rotateX, rotateY, translateX, translateY, transformStyle: "preserve-3d" }}>
-                <div className="relative" style={{ width: 420, height: 560 }}>
-                  {/* back pages */}
+                <div className="relative" style={{ width: 460, height: 600 }}>
+                  {/* back pages — floating with different speeds */}
                   <motion.div
                     className="absolute paper-shadow-sm bg-white rounded-md"
-                    style={{ width: 360, height: 480, top: 50, left: 70, rotate: "6deg", opacity: 0.4, transform: "translateZ(-40px)" }}
+                    style={{ width: 380, height: 500, top: 60, left: 80, rotate: "7deg", opacity: 0.35, transform: "translateZ(-50px)" }}
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <motion.div
                     className="absolute paper-shadow-sm bg-white rounded-md"
-                    style={{ width: 360, height: 480, top: 35, left: 55, rotate: "-4deg", opacity: 0.6, transform: "translateZ(-20px)" }}
+                    style={{ width: 380, height: 500, top: 40, left: 60, rotate: "-5deg", opacity: 0.55, transform: "translateZ(-25px)" }}
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                   />
-                  {/* main CV */}
+                  {/* main CV — larger and clearer */}
                   <motion.div
                     className="absolute float-y-slow"
-                    style={{ top: 0, left: 10, transform: "translateZ(0px)" }}
+                    style={{ top: 0, left: 15, transform: "translateZ(0px)" }}
                   >
-                    <div className="origin-top-left" style={{ transform: "scale(0.48)" }}>
+                    <div className="origin-top-left" style={{ transform: "scale(0.54)" }}>
                       <CVRenderer cv={sampleCV} width={794} showShadow />
                     </div>
                   </motion.div>

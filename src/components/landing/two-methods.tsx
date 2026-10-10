@@ -1,7 +1,7 @@
 "use client";
 
 import { Reveal } from "@/components/shared/reveal";
-import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
+import { MagneticCTA, MagneticButton } from "@/components/shared/magnetic-button";
 import { useAppStore } from "@/lib/store/app-store";
 import { MessageSquareText, FileText, Sparkles } from "lucide-react";
 
@@ -74,9 +74,9 @@ export function TwoMethods() {
                 </div>
 
                 <div className="mt-8">
-                  <BrandButton variant="primary" size="lg" onClick={startGuided} className="group">
-                    Start Guided <ButtonArrow />
-                  </BrandButton>
+                  <MagneticCTA variant="primary" size="lg" onClick={startGuided}>
+                    Start Guided
+                  </MagneticCTA>
                 </div>
               </div>
             </div>
@@ -123,9 +123,9 @@ export function TwoMethods() {
                 </div>
 
                 <div className="mt-8">
-                  <BrandButton variant="secondaryLight" size="lg" onClick={startForm} className="group">
-                    Open Form <ButtonArrow />
-                  </BrandButton>
+                  <MagneticButton variant="light" size="lg" onClick={startForm}>
+                    Open Form
+                  </MagneticButton>
                 </div>
               </div>
             </div>

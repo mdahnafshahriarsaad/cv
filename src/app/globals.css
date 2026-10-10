@@ -266,9 +266,11 @@
   /* Button glow — tinted red, not neon */
   .btn-glow {
     box-shadow: 0 8px 24px -6px rgba(255, 67, 54, 0.4);
+    background: linear-gradient(135deg, #ff4336 0%, #ff4336 50%, #e53a2e 100%);
   }
   .btn-glow:hover {
     box-shadow: 0 12px 32px -6px rgba(183, 28, 28, 0.5);
+    background: linear-gradient(135deg, #ff4336 0%, #b71c1c 100%);
   }
   /* Premium easing curves — no linear or ease-in-out */
   .ease-premium {

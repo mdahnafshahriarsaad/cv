@@ -20,6 +20,7 @@ export function Reveal({
   y = 24,
   once = true,
   as = "div",
+  blur = true,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -27,6 +28,7 @@ export function Reveal({
   y?: number;
   once?: boolean;
   as?: React.ElementType;
+  blur?: boolean;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, margin: "-80px" });
@@ -34,9 +36,17 @@ export function Reveal({
   return (
     <MotionTag
       ref={ref}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      initial={blur ? { opacity: 0, y, filter: "blur(8px)" } : { opacity: 0, y }}
+      animate={
+        inView
+          ? blur
+            ? { opacity: 1, y: 0, filter: "blur(0px)" }
+            : { opacity: 1, y: 0 }
+          : blur
+          ? { opacity: 0, y, filter: "blur(8px)" }
+          : { opacity: 0, y }
+      }
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
       className={cn(className)}
     >
       {children}

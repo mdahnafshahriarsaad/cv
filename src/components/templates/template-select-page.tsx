@@ -170,49 +170,15 @@ export function TemplateSelectPage() {
               const previewCV = createSampleCV(t.photoShape !== "none");
               previewCV.design.templateId = t.id;
               return (
-                <div
+                <TemplateCard
                   key={t.id}
-                  className="group relative rounded-[12px] overflow-hidden border border-white/8 bg-[#1a1a1a] transition-all duration-300 hover:border-nirvash-red/35 hover:shadow-xl hover:-translate-y-1"
-                >
-                  {/* Favorite */}
-                  <button
-                    onClick={() => toggleFav(t.id)}
-                    className={cn("absolute top-2.5 right-2.5 z-20 size-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm", isFav ? "bg-nirvash-red text-white" : "bg-black/40 text-white/50 hover:text-white")}
-                    aria-label="Favorite"
-                  >
-                    <Star className={cn("size-3.5", isFav && "fill-current")} />
-                  </button>
-
-                  {/* Preview area — full miniature CV */}
-                  <div
-                    className="relative overflow-hidden bg-[#1a1a1a] flex items-center justify-center cursor-pointer py-3"
-                    onClick={() => setPreviewId(t.id)}
-                  >
-                    <div className="transition-transform duration-500 group-hover:scale-[1.03]">
-                      <LazyCVPreview cv={previewCV} scale={PREVIEW_SCALE} />
-                    </div>
-                    {/* hover overlay + Preview button */}
-                    <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/35 transition-all duration-300 flex items-center justify-center pointer-events-none">
-                      <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-[10px] bg-white/15 backdrop-blur border border-white/30 px-4 py-2 text-[12px] font-semibold text-white pointer-events-none">
-                        <ZoomIn className="size-3.5" /> Preview
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="p-3.5 flex items-center justify-between bg-white/[0.02] border-t border-white/5">
-                    <div className="min-w-0">
-                      <h4 className="text-[14px] font-bold tracking-tight">{t.name}</h4>
-                      <p className="text-[11px] text-white/40 truncate">{t.collection}{t.badges?.length ? ` · ${t.badges[0]}` : ""}</p>
-                    </div>
-                    <button
-                      onClick={() => selectTemplate(t.id)}
-                      className="text-[11px] font-semibold text-nirvash-red hover:text-white transition-colors shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-nirvash-red/10"
-                    >
-                      Use <ArrowRight className="size-3" />
-                    </button>
-                  </div>
-                </div>
+                  template={t}
+                  previewCV={previewCV}
+                  isFav={isFav}
+                  onToggleFav={() => toggleFav(t.id)}
+                  onPreview={() => setPreviewId(t.id)}
+                  onUse={() => selectTemplate(t.id)}
+                />
               );
             })}
           </div>
@@ -233,6 +199,91 @@ export function TemplateSelectPage() {
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Template card with cursor-tracking spotlight border.
+ * Uses CSS variables (--mx, --my) updated via mousemove — no React state,
+ * no re-renders. The border illuminates red where the cursor is.
+ */
+function TemplateCard({
+  template: t,
+  previewCV,
+  isFav,
+  onToggleFav,
+  onPreview,
+  onUse,
+}: {
+  template: ReturnType<typeof getTemplate>;
+  previewCV: ReturnType<typeof createSampleCV>;
+  isFav: boolean;
+  onToggleFav: () => void;
+  onPreview: () => void;
+  onUse: () => void;
+}) {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMove = (e: React.MouseEvent) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMove}
+      className="group relative rounded-[12px] overflow-hidden bg-[#1a1a1a] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+      style={{
+        // spotlight border that follows the cursor
+        background: `
+          radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), rgba(255,67,54,0.15), transparent 70%),
+          #1a1a1a
+        `,
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {/* Favorite */}
+      <button
+        onClick={onToggleFav}
+        className={cn("absolute top-2.5 right-2.5 z-20 size-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm", isFav ? "bg-nirvash-red text-white" : "bg-black/40 text-white/50 hover:text-white")}
+        aria-label="Favorite"
+      >
+        <Star className={cn("size-3.5", isFav && "fill-current")} />
+      </button>
+
+      {/* Preview area */}
+      <div
+        className="relative overflow-hidden bg-[#1a1a1a] flex items-center justify-center cursor-pointer py-3"
+        onClick={onPreview}
+      >
+        <div className="transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]">
+          <LazyCVPreview cv={previewCV} scale={PREVIEW_SCALE} />
+        </div>
+        <div className="absolute inset-0 bg-[#212121]/0 group-hover:bg-[#212121]/35 transition-all duration-500 flex items-center justify-center pointer-events-none">
+          <span className="opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] inline-flex items-center gap-1.5 rounded-[10px] bg-white/15 backdrop-blur border border-white/30 px-4 py-2 text-[12px] font-semibold text-white pointer-events-none">
+            <ZoomIn className="size-3.5" /> Preview
+          </span>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="p-3.5 flex items-center justify-between bg-white/[0.02] border-t border-white/5">
+        <div className="min-w-0">
+          <h4 className="text-[14px] font-bold tracking-tight">{t.name}</h4>
+          <p className="text-[11px] text-white/40 truncate">{t.collection}{t.badges?.length ? ` · ${t.badges[0]}` : ""}</p>
+        </div>
+        <button
+          onClick={onUse}
+          className="text-[11px] font-semibold text-nirvash-red hover:text-white transition-colors shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-nirvash-red/10"
+        >
+          Use <ArrowRight className="size-3" />
+        </button>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Reveal } from "@/components/shared/reveal";
-import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
+import { MagneticButton } from "@/components/shared/magnetic-button";
 import { CVPreview } from "@/components/templates/cv-preview";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { TEMPLATES, getTemplate } from "@/components/templates/registry";
@@ -104,9 +104,9 @@ export function TemplateShowcase() {
         </div>
 
         <Reveal className="mt-14 flex justify-center" delay={0.2}>
-          <BrandButton variant="secondaryLight" size="lg" onClick={browse} className="group">
-            Explore All Templates <ButtonArrow />
-          </BrandButton>
+          <MagneticButton variant="secondaryLight" size="lg" onClick={browse}>
+            Explore All Templates
+          </MagneticButton>
         </Reveal>
       </div>
     </section>

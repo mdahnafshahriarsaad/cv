@@ -1,7 +1,7 @@
 "use client";
 
 import { Reveal } from "@/components/shared/reveal";
-import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
+import { MagneticCTA } from "@/components/shared/magnetic-button";
 import { useAppStore } from "@/lib/store/app-store";
 
 export function FinalCTA() {
@@ -46,14 +46,14 @@ export function FinalCTA() {
           {/* ambient glow behind button */}
           <div className="relative">
             <div className="absolute inset-0 -m-8 rounded-full bg-nirvash-red/25 blur-2xl ambient-pulse" />
-            <BrandButton
+            <MagneticCTA
               variant="primary"
               size="xl"
-              className="relative px-10 group"
+              className="relative px-10"
               onClick={start}
             >
-              Create My CV for Free <ButtonArrow />
-            </BrandButton>
+              Create My CV for Free
+            </MagneticCTA>
           </div>
         </Reveal>
       </div>
