@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { MagneticButton, MagneticCTA } from "@/components/shared/magnetic-button";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { HeroCVStack } from "@/components/landing/hero-cv-stack";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { useAppStore } from "@/lib/store/app-store";
 
@@ -18,23 +18,7 @@ export function Hero() {
   const { scrollY } = useScroll();
   const yBack = useTransform(scrollY, [0, 600], [0, 80]);
   const yMid = useTransform(scrollY, [0, 600], [0, 50]);
-  const yFront = useTransform(scrollY, [0, 600], [0, 20]);
   const opacity = useTransform(scrollY, [0, 500], [1, 0]);
-
-  // mouse parallax for CV stack
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [4, -4]), { stiffness: 150, damping: 20 });
-  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-6, 6]), { stiffness: 150, damping: 20 });
-  const translateX = useSpring(useTransform(mx, [-0.5, 0.5], [-12, 12]), { stiffness: 150, damping: 20 });
-  const translateY = useSpring(useTransform(my, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 20 });
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    mx.set((e.clientX - rect.left) / rect.width - 0.5);
-    my.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-  const onMouseLeave = () => { mx.set(0); my.set(0); };
 
   const startCreate = () => {
     setView("create-start");
@@ -181,50 +165,8 @@ export function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* Right: floating CV preview stack with mouse parallax */}
-          <motion.div
-            style={{ y: yFront, opacity }}
-            className="hidden lg:flex justify-center"
-            onMouseMove={onMouseMove}
-            onMouseLeave={onMouseLeave}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              style={{ perspective: 1200 }}
-              className="relative"
-            >
-              {/* soft red glow behind CV stack */}
-              <div className="absolute inset-0 -m-20 rounded-full bg-nirvash-red/15 blur-3xl ambient-pulse pointer-events-none" />
-              <motion.div style={{ rotateX, rotateY, translateX, translateY, transformStyle: "preserve-3d" }}>
-                <div className="relative" style={{ width: 460, height: 600 }}>
-                  {/* back pages — floating with different speeds */}
-                  <motion.div
-                    className="absolute paper-shadow-sm bg-white rounded-md"
-                    style={{ width: 380, height: 500, top: 60, left: 80, rotate: "7deg", opacity: 0.35, transform: "translateZ(-50px)" }}
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    className="absolute paper-shadow-sm bg-white rounded-md"
-                    style={{ width: 380, height: 500, top: 40, left: 60, rotate: "-5deg", opacity: 0.55, transform: "translateZ(-25px)" }}
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  />
-                  {/* main CV — larger and clearer */}
-                  <motion.div
-                    className="absolute float-y-slow"
-                    style={{ top: 0, left: 15, transform: "translateZ(0px)" }}
-                  >
-                    <div className="origin-top-left" style={{ transform: "scale(0.54)" }}>
-                      <CVRenderer cv={sampleCV} width={794} showShadow />
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </motion.div>
+          {/* Right: animated CV preview stack */}
+          <HeroCVStack cv={sampleCV} />
         </div>
       </div>
 

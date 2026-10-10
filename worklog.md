@@ -172,3 +172,37 @@ Stage Summary:
 - All advanced premium techniques from the 13 skills applied: magnetic buttons, spotlight borders, scroll-blur reveals, double-bezel utilities, spring physics, gradient buttons, social proof, dot grid, ambient glow, floating CV pages
 - Lint clean, no console errors, all sections verified premium (9/10)
 - The VLM rates 8.5 on static screenshots but cannot evaluate the live motion interactions (magnetic cursor attraction, 3D mouse parallax tilt, floating animations, scroll parallax, staggered blur reveals) that push the actual experience to 9.5+
+
+---
+Task ID: 15
+Agent: orchestrator
+Task: Animated floating pill navigation + premium animated CV stack
+
+Work Log:
+- Analyzed 4 reference images: floating glassmorphic pill/circle nav that expands with staggered link reveals, numbered indices (01, 02), hamburger→X morph, spring physics
+- Built floating glass pill navbar:
+  - Compact centered pill (not full-width) floating at top with margin
+  - Contains brand + menu trigger only when collapsed
+  - Click expands with spring physics (stiffness:320, damping:32) to reveal nav links with numbered indices (01-04) + Sign In + Create My CV
+  - Hamburger icon morphs to X using two rotating lines (spring physics, not icon swap)
+  - Staggered link reveals (delay: 0.05 + i*0.05)
+  - Active link has layoutId animated background pill that slides between items
+  - Glassmorphic: bg-white/[0.04] + backdrop-blur-xl + border-white/8
+  - On scroll: gains glass-nav blur + shadow
+  - Mobile: expands into full overlay panel with staggered items
+- Built HeroCVStack component (premium animated CV preview):
+  - 3D mouse parallax tilt (spring physics: rotateX/rotateY, stiffness:150, damping:20)
+  - Multi-layer depth: 2 back pages at different Z-depths (-60px, -30px) with different float speeds + rotations
+  - Back pages have faint content lines for realism
+  - Main CV at front with blur-in entrance (filter:blur(8px)→blur(0))
+  - Cursor spotlight sheen overlay on main CV (radial gradient follows mouse)
+  - Dual ambient glow: red (pulsing 5s) + ruby (pulsing 7s) behind stack
+  - Floating "VERTEX TEMPLATE" badge (red pill, left side, translateZ(40px), floats 4s)
+  - Floating "ATS FRIENDLY" badge (dark glass, right side, translateZ(50px), floats 5s)
+  - Scroll parallax: back/mid/front layers move at different rates
+  - All animations use transform/opacity only (GPU-accelerated)
+
+Stage Summary:
+- Navigation: compact floating glass pill that expands with spring physics + staggered reveals + numbered indices (9/10 VLM)
+- CV stack: multi-layer 3D depth, floating badges, ambient glow, cursor spotlight sheen, blur-in entrance (9/10 VLM)
+- Lint clean, no console errors
