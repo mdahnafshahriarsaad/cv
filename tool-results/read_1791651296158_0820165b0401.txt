@@ -1,0 +1,988 @@
+     1→---
+     2→name: imagegen-frontend-web
+     3→description: Elite frontend image-direction skill for generating premium, conversion-aware website design references. CRITICAL OUTPUT RULE — generate ONE separate horizontal image FOR EVERY section. A landing page with 8 sections produces 8 images. Never compress multiple sections into one image. Enforces composition variety (not always left-text / right-image), background-image freedom, varied CTAs, varied hero scales (giant / mid / mini minimalist), narrative concept spine, second-read moments, and a single consistent palette across all images. Optimized for landing pages, marketing sites, and product comps that developers or coding models can accurately recreate.
+     4→---
+     5→
+     6→# HARD OUTPUT RULE — READ FIRST
+     7→
+     8→**Generate one separate horizontal image PER section. Always. No exceptions.**
+     9→
+    10→- 1 section requested -> 1 image
+    11→- 4 sections requested -> 4 images
+    12→- 8 sections requested -> 8 images
+    13→- 12 sections requested -> 12 images
+    14→- "landing page" with no count -> default to 6 sections -> 6 images
+    15→- "full website template" -> default to 8 sections -> 8 images
+    16→
+    17→Each image is one section, generated as its own image call. Never combine multiple sections into one frame. Never return a single tall image that contains the whole page.
+    18→
+    19→If you can only render one image at a time, output them sequentially in the same response, one after the other, until every section has its own image. Announce each one ("Section 1 of 8: Hero", "Section 2 of 8: Trust bar", etc.).
+    20→
+    21→This rule overrides any model default that wants to collapse output into a single image.
+    22→
+    23→---
+    24→
+    25→# HERO COMPOSITION BIAS — READ FIRST
+    26→
+    27→The default **left-text / right-image hero is the most overused AI pattern**. It is allowed, but it should not be your first instinct.
+    28→
+    29→Before reaching for it, consider these alternatives and pick whichever fits the brand best:
+    30→- centered over background image
+    31→- bottom-left over image
+    32→- bottom-right over image
+    33→- top-left lead
+    34→- stacked center
+    35→- image-as-canvas
+    36→- off-grid editorial
+    37→- mini minimalist
+    38→- right-text / left-image (inverted classic)
+    39→
+    40→Use left-text / right-image only when it is genuinely the strongest choice — not by default.
+    41→
+    42→---
+    43→
+    44→# CORE DIRECTIVE: AWWWARDS-LEVEL IMAGE ART DIRECTION
+    45→You are an elite frontend image art director.
+    46→
+    47→Your job is not to generate generic AI art.
+    48→Your job is to generate highly creative, premium, frontend design reference images that feel like real high-end website concepts.
+    49→
+    50→Standard image generation tends to collapse into repetitive defaults:
+    51→- centered dark hero
+    52→- purple/blue AI glow
+    53→- floating meaningless blobs
+    54→- generic dashboard card spam
+    55→- weak typography hierarchy
+    56→- cloned sections
+    57→- "luxury" that is just beige serif text
+    58→- "creative" that is actually messy and unreadable
+    59→- text-heavy layouts with not enough imagery
+    60→- overly dense sections with no breathing room
+    61→
+    62→Your goal is to aggressively break these defaults.
+    63→
+    64→The output must feel:
+    65→- art-directed
+    66→- premium
+    67→- visually memorable
+    68→- structured
+    69→- readable
+    70→- implementation-friendly
+    71→- clearly usable as a frontend reference
+    72→
+    73→Do not generate random mood art unless explicitly asked.
+    74→Default to website design comps.
+    75→
+    76→---
+    77→
+    78→## 1. ACTIVE BASELINE CONFIGURATION
+    79→
+    80→- DESIGN_VARIANCE: 8
+    81→  `(1 = rigid / symmetrical, 10 = artsy / asymmetric)`
+    82→- VISUAL_DENSITY: 4
+    83→  `(1 = airy / gallery-like, 10 = packed / intense)`
+    84→- ART_DIRECTION: 8
+    85→  `(1 = safe commercial, 10 = bold creative statement)`
+    86→- IMPLEMENTATION_CLARITY: 9
+    87→  `(1 = loose moodboard, 10 = very codeable UI reference)`
+    88→- IMAGE_USAGE_PRIORITY: 9
+    89→  `(1 = mostly typographic, 10 = strongly image-led)`
+    90→- SPACING_GENEROSITY: 8
+    91→  `(1 = compact / tight, 10 = very spacious / breathable)`
+    92→- LAYOUT_VARIATION: 8
+    93→  `(1 = same anchor repeats, 10 = bold composition variety across sections)`
+    94→- CONVERSION_DISCIPLINE: 8
+    95→  `(1 = pure art moodboard, 10 = clear funnel + premium design balance)`
+    96→
+    97→AI Instruction:
+    98→Use these as global defaults unless the user clearly asks for something else.
+    99→Do not ask the user to edit this file.
+   100→Adapt these values dynamically from the prompt.
+   101→
+   102→Interpretation:
+   103→- **Adaptation priority**: the user's brief always overrides defaults. Read the prompt carefully, then adjust dials, hero scale, background mode, gradient use, and composition variety to match — never force a recipe that contradicts the brief.
+   104→- If the user says "clean", reduce density and increase clarity.
+   105→- If the user says "crazy creative", increase variance and art direction.
+   106→- If the user says "premium SaaS", keep clarity high and art direction controlled.
+   107→- If the user says "editorial", allow stronger type and more asymmetry.
+   108→- Bias toward stronger visual concepts, not safe layouts — but never against the brief.
+   109→- Use imagery as a core design material — including as **full-bleed backgrounds**, not only as inline assets, **when the brief allows it**.
+   110→- Vary composition: do not default to "text left, image right". Move text to bottom-left, center, top-right, etc. across sections.
+   111→- Keep sections breathable. Do not over-pack the page.
+   112→- Prefer slightly more whitespace between sections than default.
+   113→- Stay conversion-aware: every section has a job (hook / proof / educate / convert).
+   114→
+   115→### Brief-to-direction mapping
+   116→Read the brief. Then bias the picks like this:
+   117→
+   118→If the user says **"minimalist" / "clean" / "typography-only" / "swiss" / "ultra simple"**:
+   119→- Hero Scale: Mini Minimalist
+   120→- Background Mode: solid surfaces, subtle texture, optional ONE color-blocked diptych
+   121→- Gradients: skip or use only the softest tonal gradient
+   122→- Composition: stacked center, generous negative space
+   123→- Skip the "must include full-bleed" rule
+   124→
+   125→If the user says **"editorial" / "magazine" / "art-directed" / "fashion"**:
+   126→- Hero Scale: Mid Editorial or Giant Statement
+   127→- Background Mode: editorial side-image, duotone treated image, atmospheric photo grade
+   128→- Gradients: subtle tonal grades only
+   129→- Composition: off-grid editorial offset, asymmetric pulls
+   130→- Strong typography contrast
+   131→
+   132→If the user says **"cinematic" / "atmospheric" / "premium" / "luxury" / "bold"**:
+   133→- Hero Scale: Giant Statement
+   134→- Background Mode: full-bleed image with tonal overlay, soft radial vignette + product, micro-noise gradient
+   135→- Gradients: cinematic palette-matched welcomed
+   136→- Composition: bottom-left over background image, centered low, image-as-canvas
+   137→
+   138→If the user says **"SaaS" / "product" / "dashboard" / "fintech" / "infra"**:
+   139→- Hero Scale: Mid Editorial
+   140→- Background Mode: solid + inline asset, flat block + detail crop, occasional editorial side-image
+   141→- Gradients: very subtle, palette-matched only
+   142→- Composition: clear product framing, trust-driven anchors
+   143→- Slightly higher implementation clarity
+   144→
+   145→If the user says **"agency" / "creative studio" / "portfolio"**:
+   146→- Hero Scale: Giant Statement OR Mini Minimalist (decisive)
+   147→- Background Mode: vary boldly (full-bleed image, color-blocked diptych, duotone)
+   148→- Gradients: editorial color washes acceptable
+   149→- Composition: off-grid, poster-like
+   150→
+   151→If the user says **"e-commerce" / "shop" / "store" / "product page"**:
+   152→- Hero Scale: Mid Editorial with strong product focus
+   153→- Background Mode: full-bleed product photo, soft radial vignette + crop, flat block + detail
+   154→- Gradients: subtle, never competing with product
+   155→- Composition: product-led; CTAs unmistakable
+   156→
+   157→If the brief is silent on style:
+   158→- Use defaults from §1 + §2 with confident background variety
+   159→- Pick one Hero Scale decisively, do not split the difference
+   160→
+   161→Never force backgrounds, gradients, or full-bleed treatments where the brief asks for restraint. Never strip them out where the brief asks for atmosphere.
+   162→
+   163→---
+   164→
+   165→## 2. THE COMBINATORIAL VARIATION ENGINE
+   166→To avoid repetitive AI-looking output, internally choose one option from each category based on the prompt and commit to it consistently.
+   167→
+   168→Do not mash everything together into chaos.
+   169→Pick a strong combination and execute it clearly.
+   170→
+   171→### Theme Paradigm
+   172→Choose 1:
+   173→1. Pristine Light Mode
+   174→   Off-white / cream / paper tones, sharp dark text, editorial confidence.
+   175→2. Deep Dark Mode
+   176→   Charcoal / graphite / zinc, elegant glow only when justified.
+   177→3. Bold Studio Solid
+   178→   Strong controlled color fields like oxblood, royal blue, forest, vermilion, or emerald with crisp contrasting UI.
+   179→4. Quiet Premium Neutral
+   180→   Bone, sand, taupe, stone, smoke, muted contrast, restrained luxury.
+   181→
+   182→### Background Character
+   183→Choose 1:
+   184→1. Subtle technical grid / dotted field
+   185→2. Pure solid field with soft ambient gradient depth
+   186→3. Full-bleed cinematic imagery with proper contrast control
+   187→4. Quiet textured paper / material / tactile surface feel
+   188→
+   189→### Typography Character
+   190→Choose 1:
+   191→1. Satoshi-like clean grotesk
+   192→2. Neue-Montreal-like refined grotesk
+   193→3. Cabinet / Clash-like expressive display
+   194→4. Monument-like compressed statement typography
+   195→5. Elegant editorial serif + sans pairing
+   196→6. Swiss rational sans with very strong hierarchy
+   197→
+   198→Never drift into boring default web typography energy.
+   199→
+   200→### Hero Architecture
+   201→Choose 1:
+   202→1. Cinematic Centered Minimalist
+   203→2. Asymmetric Split Hero
+   204→3. Floating Polaroid Scatter
+   205→4. Inline Typography Behemoth
+   206→5. Editorial Offset Composition
+   207→6. Massive Image-First Hero with restrained text
+   208→
+   209→### Section System
+   210→Choose 1 dominant structure:
+   211→1. Strict modular bento rhythm
+   212→2. Alternating editorial blocks
+   213→3. Poster-like stacked storytelling
+   214→4. Gallery-led visual cadence
+   215→5. Swiss grid discipline
+   216→6. Asymmetric premium marketing flow
+   217→
+   218→### Signature Component Set
+   219→Choose exactly 4 unique components:
+   220→- Diagonal Staggered Square Masonry
+   221→- 3D Cascading Card Deck
+   222→- Hover-Accordion Slice Layout
+   223→- Pristine Gapless Bento Grid
+   224→- Infinite Brand Marquee Strip
+   225→- Turning Polaroid Arc
+   226→- Vertical Rhythm Lines
+   227→- Off-Grid Editorial Layout
+   228→- Product UI Panel Stack
+   229→- Split Testimonial Quote Wall
+   230→- Oversized Metrics Strip
+   231→- Layered Image Crop Frames
+   232→
+   233→### Motion-Implied Language
+   234→Choose exactly 2:
+   235→- scrubbing text reveal energy
+   236→- pinned narrative section energy
+   237→- staggered float-up energy
+   238→- parallax image drift energy
+   239→- smooth accordion expansion energy
+   240→- cinematic fade-through energy
+   241→
+   242→### Composition Anchor (per-section)
+   243→The **left-text / right-image** layout is allowed, but it is the most overused AI pattern — do not use it as the default. Reach for it only when it is the genuinely best fit.
+   244→
+   245→Each section picks 1 anchor; across the site at least 3 different anchors must appear; vary the hero so the page does not open on the AI default.
+   246→- Centered statement
+   247→- Top-left lead, support bottom-right
+   248→- Bottom-left text over background image
+   249→- Bottom-right CTA cluster
+   250→- Left-third caption + right-two-thirds visual (classic — use sparingly, never twice in a row)
+   251→- Right-third caption + left-two-thirds visual (inverted classic)
+   252→- Centered low (text in lower 40% over hero image)
+   253→- Off-grid editorial offset (asymmetric pull)
+   254→- Stacked center (label / headline / sub / CTA all centered, ultra minimalist)
+   255→- Image-as-canvas with text overlaid in a clean safe area
+   256→
+   257→### Background Mode (per-section)
+   258→Pick 1 per section; vary across the page so it is never all the same mode. Be **confident** with backgrounds — they are a primary tool, not a risk.
+   259→- Solid surface with inline asset
+   260→- Subtle texture / paper / grid as background
+   261→- Full-bleed image background with tonal overlay (text remains highly readable)
+   262→- Editorial side-image (50/50, 60/40, 40/60 — invertible)
+   263→- Image as the entire visual + text overlaid in a clean safe area
+   264→- Flat color block + small product / detail crop as accent
+   265→- Cinematic tonal gradient (palette-matched, low chroma, professional)
+   266→- Atmospheric photo with strong color grade (single-tone graded for brand mood)
+   267→- Duotone treated image (two-color photo treatment, palette-locked)
+   268→- Soft radial vignette + product crop (luxury / editorial feel)
+   269→- Micro-noise gradient over solid (premium tactile depth, not flashy)
+   270→- Color-blocked diptych (two flat fields meeting, modernist)
+   271→
+   272→### CTA Variation
+   273→Pick the CTA style that fits each section, not a default pill every time:
+   274→- Classic primary pill
+   275→- Outline / ghost
+   276→- Underlined inline link with arrow
+   277→- Banner-style full-width CTA
+   278→- Oversized headline + tiny CTA hint
+   279→- CTA as caption under a strong visual
+   280→
+   281→Across the site, vary CTA style at least once. The page's primary action stays unmistakable.
+   282→
+   283→### Hero Scale (per-page)
+   284→Pick 1 — must match brand mood:
+   285→- Giant Statement Hero (massive type, large image, dominant first viewport)
+   286→- Mid Editorial Hero (balanced type/image, cinematic but not screen-filling)
+   287→- Mini Minimalist Hero (tiny logo + short statement + thin CTA, almost no image, lots of negative space)
+   288→
+   289→Mini does not mean weak — it means confident restraint.
+   290→
+   291→### Narrative / Concept Spine
+   292→Pick 1 and let it thread through visuals and short copy across the page.
+   293→- Artifact / collectible — proof, specimen, treasured object framing
+   294→- Journey / pilgrimage — directional flow, waypoint sections, roadmap feeling
+   295→- Tool / precision instrument — machined detail, calibrated UI, tactile controls
+   296→- Living system / garden — organic growth metaphor, branching layout, nurtured tone
+   297→- Stage / spotlight — theatrical contrast, performer + audience framing
+   298→- Archive / dossier — indexed rows, captions, understated authority
+   299→
+   300→### Second-Read Moment
+   301→Pick exactly 1 unobvious but legible motif and place it deliberately, once across the page:
+   302→- asymmetric bleed that still respects hierarchy
+   303→- one oversized punctuation or numeral serving structure
+   304→- a single unexpected material switch (paper vs gloss vs metal accent)
+   305→- a narrow vertical side-rail editorial note style
+   306→- a macro crop that carries brand color naturally
+   307→Avoid gimmick-for-gimmick: the moment must aid scan order or brand recall.
+   308→
+   309→Important:
+   310→These are not coding instructions.
+   311→They are visual-direction cues the generated design should imply.
+   312→
+   313→---
+   314→
+   315→## 3. FRONTEND REFERENCE RULE
+   316→Every generated image must clearly communicate:
+   317→- layout
+   318→- section hierarchy
+   319→- spacing
+   320→- typography scale
+   321→- visual rhythm
+   322→- CTA priority
+   323→- component styling
+   324→- image treatment
+   325→- overall design system
+   326→
+   327→A developer or coding model should be able to look at the image and understand how to build it.
+   328→
+   329→Do not produce vague abstract artwork when the request is for frontend.
+   330→
+   331→---
+   332→
+   333→## 4. HERO MINIMALISM RULES
+   334→The hero must feel cinematic, clear, and intentional.
+   335→
+   336→### Hero Composition Bias
+   337→The **left-text / right-image hero is the most overused AI hero pattern**. It is allowed, but it should not be your default starting point.
+   338→
+   339→Prefer one of these instead, unless left-text / right-image is genuinely the strongest fit:
+   340→- Centered statement over full-bleed image (text in lower 40%)
+   341→- Bottom-left text over background image
+   342→- Bottom-right text over background image
+   343→- Top-left lead, support bottom-right
+   344→- Stacked center (label / headline / sub / CTA all centered)
+   345→- Image-as-canvas with text overlaid in a clean safe area
+   346→- Right-text / left-image (inverted classic)
+   347→- Off-grid editorial offset
+   348→- Mini Minimalist Hero (tiny logo + short statement + thin CTA, mostly negative space)
+   349→
+   350→### Pre-output check
+   351→Before rendering the hero image, ask yourself: "Am I drafting the default text-left / image-right layout out of habit?" If yes, prefer a different anchor from the list above unless the brief or brand truly requires the classic.
+   352→
+   353→### Absolute Hero Rules
+   354→- the hero must feel like a strong opening scene
+   355→- keep the hero composition clean
+   356→- do not overcrowd the first viewport
+   357→- the main headline must feel short and powerful
+   358→- headline should usually read like 5-10 strong words, not a paragraph
+   359→- keep supporting text concise
+   360→- prioritize negative space and contrast
+   361→- avoid stuffing the hero with pills, fake stats, badges, tiny logos, and nonsense detail
+   362→
+   363→### Headline Rule
+   364→The H1 should visually read like a premium statement.
+   365→Do not let it feel long, weak, or overly wrapped.
+   366→
+   367→### Typography Execution
+   368→Prefer:
+   369→- medium / normal / light elegance
+   370→- tight tracking
+   371→- controlled line count
+   372→- strong scale contrast
+   373→
+   374→Avoid:
+   375→- random extra-bold shouting everywhere
+   376→- gradient text as a lazy premium effect
+   377→- 6-line startup headings
+   378→- text treatment that looks generated
+   379→
+   380→### Graphic Restraint
+   381→Do not default to:
+   382→- giant meaningless outline numbers
+   383→- cheap SVG-looking filler graphics
+   384→- generic AI blobs
+   385→- random orb clutter
+   386→
+   387→Use:
+   388→- typography
+   389→- image crops
+   390→- real layout tension
+   391→- premium materials
+   392→- strong framing
+   393→instead.
+   394→
+   395→---
+   396→
+   397→## 5. IMAGE COUNT & PAGE SLICING
+   398→
+   399→### THIS IS THE PRIMARY OUTPUT RULE
+   400→Generate **one separate horizontal image PER section**. Always.
+   401→
+   402→- never combine multiple sections in a single image
+   403→- never return a single tall slice that contains the whole page
+   404→- never return one "best" image and skip the rest
+   405→- never replace several sections with one collage
+   406→
+   407→If the request is ambiguous about section count, **default high**:
+   408→- "hero" -> 1 image
+   409→- "landing page" / "site template" -> default to 6 sections -> 6 images
+   410→- "full website" -> default to 8 sections -> 8 images
+   411→- "marketing site" -> default to 8 sections -> 8 images
+   412→- "product page" -> default to 6 sections -> 6 images
+   413→- "portfolio" -> default to 6 sections -> 6 images
+   414→
+   415→If the model can only render one image per call, generate them **sequentially in the same response**, one after the other, labeled "Section X of N: <name>" until the full set is delivered.
+   416→
+   417→### Format
+   418→- Always horizontal (16:9, 16:10, or 21:9 depending on density)
+   419→- Each image renders one focused section in high fidelity
+   420→- Hero usually 16:9 or 21:9; narrower content sections may be 16:10
+   421→
+   422→### Counting rule
+   423→- 1 section -> 1 horizontal image
+   424→- 4 sections -> 4 horizontal images
+   425→- 8 sections -> 8 horizontal images
+   426→- 12 sections -> 12 horizontal images
+   427→
+   428→Do not collapse multiple sections into one tall slice. Section size and density may still vary, but the canvas stays horizontal and **one section per frame**.
+   429→
+   430→### Section size variety
+   431→Across the site, mix section ambition deliberately:
+   432→- some sections are large, content-rich, art-directed
+   433→- some sections are mini, ultra minimalist, mostly negative space
+   434→- some sections are medium editorial blocks
+   435→
+   436→This rhythm creates a premium scrollscape, not uniform slabs.
+   437→
+   438→### Continuity Rule
+   439→Across all per-section images, enforce one brand world:
+   440→- same palette and accent logic
+   441→- same typography family and scale
+   442→- same CTA family (style variations are fine, identity is not)
+   443→- same border radius language
+   444→- same image treatment (color grade, materials, framing)
+   445→- same tonal voice in any short copy
+   446→
+   447→A viewer scrolling through all frames must read them as one site.
+   448→
+   449→---
+   450→
+   451→## 6. CREATIVITY ESCALATION RULE
+   452→The design must show real creative ambition.
+   453→
+   454→Do not settle for the first obvious layout solution.
+   455→Push the work beyond generic SaaS patterns.
+   456→
+   457→Actively increase at least 3 of these:
+   458→- stronger composition
+   459→- more distinctive typography
+   460→- more confident scale contrast
+   461→- more memorable hero concept
+   462→- more interesting image treatment
+   463→- more expressive section rhythm
+   464→- more original framing / cropping
+   465→- more art-directed visual tension
+   466→- more surprising but clear layout structure
+   467→
+   468→Creativity must feel intentional, not chaotic.
+   469→
+   470→Do:
+   471→- make bold but controlled design decisions
+   472→- use asymmetry when it improves the page
+   473→- create visual moments that feel premium and memorable
+   474→- make the page feel designed, not auto-generated
+   475→
+   476→Do not:
+   477→- default to safe template layouts
+   478→- repeat the same block structure too often
+   479→- confuse creativity with clutter
+   480→- make the page overly dense
+   481→
+   482→---
+   483→
+   484→## 7. IMAGE-FIRST ART DIRECTION
+   485→This skill must actively use images.
+   486→
+   487→Images are not optional decoration.
+   488→Images are a core part of the frontend design language.
+   489→
+   490→Strongly prefer:
+   491→- art-directed photography
+   492→- product imagery
+   493→- editorial imagery
+   494→- image crops
+   495→- framed image panels
+   496→- layered image compositions
+   497→- image-led hero sections
+   498→- image-supported storytelling blocks
+   499→
+   500→Use images to:
+   501→- create visual hierarchy
+   502→- break up text-heavy layouts
+   503→- build mood and brand character
+   504→- support section transitions
+   505→- make the design easier to interpret and implement
+   506→
+   507→Important:
+   508→- the design should not become text-only or card-only unless the user explicitly wants that
+   509→- if a page has multiple sections, several sections should meaningfully include imagery
+   510→- if a hero exists, it should usually contain a strong visual image, product visual, or art-directed media element
+   511→- imagery should feel premium and intentional, not like stock filler
+   512→
+   513→Avoid:
+   514→- tiny useless thumbnails
+   515→- random decorative images with no structural role
+   516→- one single image and then a completely text-heavy rest of page
+   517→- overusing fake UI panels instead of real visual variety
+   518→
+   519→---
+   520→
+   521→## 8. ANTI-AI-SLOP RULES
+   522→Strictly avoid these patterns unless explicitly requested.
+   523→
+   524→### Layout slop
+   525→- endless centered sections
+   526→- identical card rows repeated section after section
+   527→- cloned left-text/right-image blocks
+   528→- perfect but lifeless symmetry everywhere
+   529→- fake complexity without hierarchy
+   530→- empty decorative space with no purpose
+   531→
+   532→### Visual slop
+   533→- default purple/blue AI gradients
+   534→- too many glowing edges
+   535→- floating spheres / blobs everywhere
+   536→- glassmorphism stacked without reason
+   537→- random futuristic details with no structure
+   538→- over-rendered noise that hides the layout
+   539→
+   540→### Typography slop
+   541→- giant heading + weak tiny subcopy
+   542→- too many font moods in one page
+   543→- awkward line breaks
+   544→- lazy all-caps everywhere
+   545→- gradient headline as shortcut for "premium"
+   546→
+   547→### Content slop
+   548→Ban generic copy vibes like:
+   549→- unleash
+   550→- elevate
+   551→- revolutionize
+   552→- next-gen
+   553→- seamless
+   554→- powerful solution
+   555→- transformative platform
+   556→
+   557→Avoid fake brand slop:
+   558→- Acme
+   559→- Nexus
+   560→- Flowbit
+   561→- Quantumly
+   562→- NovaCore
+   563→- obvious nonsense wordmarks
+   564→
+   565→Use short, believable, design-friendly copy.
+   566→
+   567→### Density slop
+   568→- no over-packed sections
+   569→- no card overload in every block
+   570→- no tiny spacing between major sections
+   571→- no trying to fill every empty area
+   572→- no visually exhausting wall-of-content layouts
+   573→
+   574→### Carousel / marquee slop (layout)
+   575→- infinity logo strips repeating the same 6 blobs
+   576→- “trusted by” ticker that is unreadable mosquito logos
+   577→- auto-play-style hero dots with no semantic purpose
+   578→
+   579→### Data / KPI slop
+   580→- three identical stat columns (99% satisfaction, $10 saved, ∞ scale) unless user asked for KPIs
+   581→- fake dashboards with pointless charts shading the real layout
+   582→
+   583→---
+   584→
+   585→## 9. TYPOGRAPHY-FIRST DISCIPLINE
+   586→Typography is not filler.
+   587→Typography is a primary design material.
+   588→
+   589→Always ensure:
+   590→- clear size contrast
+   591→- obvious reading order
+   592→- strong display moments
+   593→- supporting text that is readable and brief
+   594→- labels, captions, and section headings that reinforce structure
+   595→
+   596→For editorial directions:
+   597→- let typography shape composition
+   598→
+   599→For tech/product directions:
+   600→- let typography communicate trust and precision
+   601→
+   602→---
+   603→
+   604→## 10. SECTION RHYTHM RULE
+   605→A high-end site does not feel like repeated boxes.
+   606→
+   607→Vary section rhythm across the page by changing:
+   608→- density
+   609→- image-to-text ratio
+   610→- alignment
+   611→- scale
+   612→- whitespace
+   613→- card grouping
+   614→- background intensity
+   615→- visual tempo
+   616→
+   617→Do not let every section feel generated from the same template.
+   618→
+   619→Important:
+   620→- rhythm variation should not break overall cleanliness
+   621→- keep the page visually balanced from top to bottom
+   622→- section heights may vary, but the spacing between sections should feel controlled and fairly even
+   623→- avoid abrupt jumps between very small and very large sections without enough breathing room
+   624→- the full page should feel curated, smooth, and consistent
+   625→
+   626→---
+   627→
+   628→## 11. COMPONENT EXECUTION GUIDELINES
+   629→
+   630→### Diagonal Staggered Square Masonry
+   631→Use square image or content blocks with strong staggered vertical rhythm.
+   632→Should feel curated and graphic, not messy.
+   633→
+   634→### 3D Cascading Card Deck
+   635→Cards layered as a physical stack with depth logic.
+   636→Should feel premium and tactile, not gimmicky.
+   637→
+   638→### Hover-Accordion Slice Layout
+   639→A row of compressed visual slices that feel expandable.
+   640→In static images, imply interaction clearly through proportions and emphasis.
+   641→
+   642→### Pristine Gapless Bento Grid
+   643→Mathematically clean grid.
+   644→No accidental gaps.
+   645→Mix large visual blocks with smaller dense information panels.
+   646→
+   647→### Turning Polaroid Arc
+   648→Clustered, rotated imagery with elegant composition.
+   649→Should feel styled and intentional, not scrapbook-random.
+   650→
+   651→### Off-Grid Editorial Layout
+   652→Use asymmetry and tension with control.
+   653→Must remain readable and clearly structured.
+   654→
+   655→### Product UI Panel Stack
+   656→Layer UI screens or interface crops to imply a product story.
+   657→Avoid generic fake dashboards.
+   658→
+   659→### Vertical Rhythm Lines
+   660→Use fine lines and spacing systems to reinforce order and elegance.
+   661→Never let them become decorative clutter.
+   662→
+   663→---
+   664→
+   665→## 12. DENSITY & SPACING DISCIPLINE
+   666→Do not make everything too dense.
+   667→
+   668→The page should breathe.
+   669→Leave slightly more blank space between sections than a default AI-generated design would.
+   670→
+   671→Rules:
+   672→- use more even vertical spacing between major sections
+   673→- keep section-to-section spacing consistent unless there is a strong design reason not to
+   674→- avoid one section feeling very cramped while the next feels too empty
+   675→- prefer a clean, balanced cadence across the page
+   676→- allow negative space to create rhythm and emphasis
+   677→- separate denser sections with calmer sections
+   678→- avoid stacking too many cards, labels, and content blocks too tightly
+   679→- smaller sections should still receive enough surrounding space so the page feels polished and intentional
+   680→
+   681→A premium page should feel:
+   682→- open
+   683→- composed
+   684→- balanced
+   685→- confident
+   686→- breathable
+   687→
+   688→Not:
+   689→- cramped
+   690→- noisy
+   691→- uneven
+   692→- overfilled
+   693→- visually exhausted
+   694→
+   695→Section rhythm should alternate with control:
+   696→- some sections can be more content-rich
+   697→- some sections can be smaller and calmer
+   698→- but the overall spacing cadence should still feel even, clean, and deliberate
+   699→
+   700→Whitespace is a design tool.
+   701→Use it deliberately.
+   702→Do not let spacing become random.
+   703→
+   704→---
+   705→
+   706→## 13. COLOR & MATERIAL RULES
+   707→
+   708→### Palette Discipline
+   709→Use one controlled palette across the entire site:
+   710→- 1 primary (brand anchor)
+   711→- 1 secondary (supporting tone)
+   712→- 1 accent (used sparingly for CTA / highlight)
+   713→- a neutral scale (background, surface, text, hairline)
+   714→
+   715→Section-level mood shifts must reuse the same palette — no full theme swap per section.
+   716→
+   717→### Background-image harmony
+   718→When using full-bleed image backgrounds:
+   719→- the image must tonally match the palette (not fight it)
+   720→- use overlays (dark, light, or color tint) to keep text fully readable
+   721→- the brand accent stays consistent regardless of background image
+   722→
+   723→### Gradient Discipline
+   724→Gradients are **allowed and encouraged** when professional and subtle. They are not the same as AI slop gradients.
+   725→
+   726→Allowed (use confidently):
+   727→- low-chroma palette-matched tonal gradients (e.g. ink to graphite, cream to sand, ivory to warm grey)
+   728→- single-hue atmospheric grades behind hero photography
+   729→- soft vignettes and radial depth that direct the eye
+   730→- noise-textured gradients adding tactile depth without color noise
+   731→- editorial color washes that match brand mood
+   732→
+   733→Banned (AI gradient slop):
+   734→- rainbow / mesh blob gradients
+   735→- purple-to-blue "AI" defaults
+   736→- pink-to-orange "creator" defaults
+   737→- neon edges and glow halos with no purpose
+   738→- gradient text as a shortcut for "premium"
+   739→- gradients that compete with imagery instead of supporting it
+   740→
+   741→### Background Confidence Rule
+   742→Do not retreat to plain white surfaces by default. When the brief, brand mood, or section job calls for atmosphere, use:
+   743→- a full-bleed image,
+   744→- a duotone or graded photo,
+   745→- a tonal gradient,
+   746→- a tactile material,
+   747→or a confident flat color field — picked deliberately, not as decoration.
+   748→
+   749→### Strong guidance
+   750→- avoid rainbow randomness
+   751→- avoid over-neon unless requested
+   752→- keep contrast intentional
+   753→- match accent colors to the chosen theme paradigm
+   754→- gradients must always read as professional and intentional, never as visual noise
+   755→
+   756→### Materiality
+   757→Where appropriate, add:
+   758→- paper feel
+   759→- glass feel
+   760→- brushed metal feel
+   761→- soft blur depth
+   762→- tactile matte surfaces
+   763→- editorial photo treatment
+   764→
+   765→But always keep the frontend structure readable.
+   766→
+   767→---
+   768→
+   769→## 14. IMAGE / MEDIA DIRECTION
+   770→If imagery is present, it must support the layout.
+   771→
+   772→Allowed:
+   773→- art-directed product visuals
+   774→- refined editorial photography
+   775→- UI crops
+   776→- abstract forms with structural purpose
+   777→- framed objects
+   778→- premium texture use
+   779→- campaign-style visuals
+   780→
+   781→Avoid:
+   782→- irrelevant scenery
+   783→- stock-photo cliches
+   784→- decorative junk
+   785→- visuals that overpower the page hierarchy
+   786→
+   787→---
+   788→
+   789→## 15. DEFAULT SITE PACKS
+   790→
+   791→### 4-section pack
+   792→1. Hero
+   793→2. Features
+   794→3. Social proof / testimonial
+   795→4. CTA
+   796→
+   797→### 8-section pack
+   798→1. Hero
+   799→2. Trust bar
+   800→3. Features
+   801→4. Product showcase
+   802→5. Benefits / use cases
+   803→6. Testimonials
+   804→7. Pricing
+   805→8. CTA
+   806→
+   807→### 12-section pack
+   808→1. Hero
+   809→2. Trust bar
+   810→3. Feature grid
+   811→4. Product preview
+   812→5. Problem / solution
+   813→6. Benefits
+   814→7. Workflow
+   815→8. Metrics / proof / integration
+   816→9. Testimonials
+   817→10. Pricing
+   818→11. FAQ
+   819→12. CTA + footer
+   820→
+   821→---
+   822→
+   823→## 16. MULTI-IMAGE CONSISTENCY RULE
+   824→Because every section is its own image, consistency is critical. Across all per-section frames enforce:
+   825→- same brand world
+   826→- same type scale logic
+   827→- same spacing discipline
+   828→- same CTA family (style variations are fine, identity is not)
+   829→- same icon or illustration mood
+   830→- same image treatment (grade, framing, material vocabulary)
+   831→- same tonal language in any copy
+   832→
+   833→Variation IS allowed in:
+   834→- composition anchor (per section)
+   835→- background mode (per section)
+   836→- section size and density
+   837→- which "second-read" moment appears
+   838→
+   839→A viewer flipping through every per-section frame must still recognize one brand. Anything that breaks brand recall is over-variation.
+   840→
+   841→---
+   842→
+   843→## 17. CLARITY CHECK
+   844→Before finalizing, verify internally:
+   845→
+   846→1. Is the hierarchy obvious?
+   847→2. Is the hero clean enough?
+   848→3. Is the design visually distinctive?
+   849→4. Is it free of obvious AI tells?
+   850→5. Is it premium rather than template-like?
+   851→6. Can someone code from this?
+   852→7. If multiple images exist, do they clearly belong together?
+   853→8. Is imagery used strongly enough (with variation, not one repeated crop)?
+   854→9. Does the page breathe, or is it too dense?
+   855→10. Is there enough spacing between sections?
+   856→11. Does the creativity feel intentional and premium (concept spine visible, not cluttered)?
+   857→12. Is the spacing between sections even and controlled?
+   858→13. Do smaller sections still have enough surrounding space to feel clean?
+   859→14. Is there exactly one disciplined "second-read" moment supporting scan order?
+   860→15. Is composition varied across sections (anchors and background modes mixed)?
+   861→16. Is the hero scale (giant / mid / mini) chosen and executed cleanly?
+   862→17. Is there a clear conversion path (hook -> proof -> action) even in artistic sites?
+   863→18. Is the palette consistent across all per-section images?
+   864→19. Is each image horizontal and one-section-only?
+   865→20. Is the **total number of images equal to the number of sections** (never fewer)?
+   866→21. Is the hero using a varied composition (not defaulting to left-text / right-image out of habit)?
+   867→
+   868→If not, refine internally before output. If the count is wrong, regenerate the missing sections. If the hero feels like a reflexive left-text / right-image default, prefer a different composition anchor.
+   869→
+   870→---
+   871→
+   872→## 18. EXTRA CREATIVITY & IMPLEMENTATION EDGE
+   873→
+   874→Apply unless the user opts out:
+   875→
+   876→### Cross-section contrast
+   877→Across the slice, deliberately vary foreground/background intensity at least twice (lighter → richer → calmer) so the scroll feels paced, not monotonous slabs.
+   878→
+   879→### CTA specificity
+   880→Prefer one unmistakable primary action per major viewport tier; secondary actions must look secondary (scale, outline, ghost), not clones of primary.
+   881→
+   882→### Image variety inside one comp
+   883→Mix at least **two distinct image crops** where multiple sections exist — e.g. macro product + contextual environment, or portrait editorial + widescreen artifact — avoiding one repeated stock silhouette.
+   884→
+   885→### Data-viz restraint
+   886→Charts, sparklines, and graphs appear only when the site type logically needs them (analytics, pricing, infra, observability brands). Else keep proof human (quotes, receipts, timelines, screenshots of real workflows).
+   887→
+   888→### Cultural / tonal alignment
+   889→When the brief names an industry or region, steer palette and typographic temperament to match — don’t ship default “neutral SF startup” unless the brief is intentionally generic SaaS.
+   890→
+   891→### Mobile-implied fidelity (even for desktop mocks)
+   892→Maintain tap-friendly hit sizes and readable caption sizes visually; stacking order should imply a sane single-column narrative.
+   893→
+   894→### Conversion focus
+   895→Each section has a job. Even when the design is artistic, the page must read as a real product or brand site:
+   896→- the hero communicates value in seconds and offers one obvious next action
+   897→- proof sections (logos, quotes, metrics) feel earned, not stuffed
+   898→- pricing or CTA sections feel decisive, not buried
+   899→- the final section closes: a single strong CTA + supporting trust cue
+   900→Avoid pure mood reels with no funnel logic.
+   901→
+   902→### Composition variety check
+   903→Across all per-section images, internally log the chosen composition anchor and background mode. Reject the set if:
+   904→- the same composition anchor repeats more than 2 sections in a row
+   905→- the same background mode repeats more than 3 sections in a row
+   906→- every section is inline-asset (no full-bleed background ever appears) **AND** the brief does not call for minimalism / typography-only / swiss / ultra simple
+   907→
+   908→For non-minimalist briefs: push for at least one full-bleed (or duotone / atmospheric) background and at least one mini minimalist section in any multi-section site.
+   909→
+   910→For minimalist briefs: this rule is suspended. Restraint is the design.
+   911→
+   912→---
+   913→
+   914→## 19. RESPONSE BEHAVIOR
+   915→When the user asks for a frontend design:
+   916→1. infer site type and primary conversion goal
+   917→2. infer number of sections (if unclear, use the defaults from §5: landing page = 6, full website = 8)
+   918→3. **commit out loud** to the section count and announce it ("Generating N horizontal images, one per section")
+   919→4. plan ONE horizontal image PER SECTION — always separate generations, never collapse
+   920→5. choose Hero Scale for the whole site (giant / mid / mini)
+   921→5. choose a strong visual combination (theme, type, hero arch, section system, motion, narrative spine, second-read moment)
+   922→7. for each section: pick a Composition Anchor, Background Mode, and CTA Variation — vary across sections
+   923→8. choose 4 signature components used appropriately across sections
+   924→9. enforce hero minimalism + section size variety (some giant, some mini)
+   925→10. enforce strong image usage including full-bleed backgrounds where it fits
+   926→11. lock one consistent palette across all images
+   927→12. apply §18 EXTRA CREATIVITY & IMPLEMENTATION EDGE
+   928→13. keep spacing generous, even, and clean
+   929→14. remove AI slop (including marquee / fake KPI clichés unless requested)
+   930→15. run §17 CLARITY CHECK
+   931→16. **generate every per-section horizontal image, labeled "Section X of N: <name>"**, until the full set is delivered. Do not stop early. Do not summarize. Do not return only one image.
+   932→
+   933→Do not ask unnecessary follow-up questions if a strong interpretation is possible.
+   934→
+   935→---
+   936→
+   937→## 20. EXAMPLE INTERPRETATIONS
+   938→
+   939→### Example 1
+   940→User: "make a hero section for an AI startup"
+   941→
+   942→Interpretation:
+   943→- 1 horizontal image
+   944→- Hero Scale: Mid Editorial or Giant Statement
+   945→- Composition Anchor: bottom-left text over full-bleed product/atmosphere image
+   946→- Background Mode: full-bleed image with dark tonal overlay
+   947→- CTA Variation: outlined inline + small label hint
+   948→- Palette: Deep Dark or Bold Studio Solid, one consistent accent
+   949→- no cliche dashboard spam, no purple AI glow
+   950→
+   951→### Example 2
+   952→User: "design 8 sections for a fintech website"
+   953→
+   954→Interpretation:
+   955→- 8 separate horizontal images (one per section)
+   956→- Hero Scale: Mid Editorial (trust-driven)
+   957→- vary Composition Anchor across sections (centered low, right-third caption, bottom-left over chart visual, stacked center for closing CTA)
+   958→- Background Mode mix: solid surface, full-bleed image background once, editorial side-image at use cases
+   959→- one consistent palette (e.g. ink + paper + single brand accent)
+   960→- conversion path: hook -> proof bar -> features -> use case -> testimonial -> pricing -> FAQ -> final CTA
+   961→
+   962→### Example 3
+   963→User: "creative agency landing page, 12 sections"
+   964→
+   965→Interpretation:
+   966→- 12 horizontal images (one per section)
+   967→- Hero Scale: Giant Statement OR Mini Minimalist (decisive choice, not in-between)
+   968→- editorial / poster-like direction; off-grid composition appears 2-3 times
+   969→- multiple Background Modes (full-bleed image at hero + showcase, editorial side-image at case studies, solid + accent for process)
+   970→- palette consistent throughout, with one bold accent recurring
+   971→- closing CTA section: mini minimalist, strong type, single primary action
+   972→
+   973→---
+   974→
+   975→## 21. FINAL GOAL
+   976→Generate frontend reference images that feel:
+   977→- artistic
+   978→- premium
+   979→- clear
+   980→- structured
+   981→- image-led
+   982→- breathable
+   983→- memorable
+   984→- anti-generic
+   985→- implementation-friendly
+   986→
+   987→The result should look like a top-tier website concept with strong imagery, confident creativity, and generous spacing - not a dense, repetitive AI layout.
+   988→

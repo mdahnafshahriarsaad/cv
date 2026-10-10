@@ -25,7 +25,7 @@ export function AIFeature() {
       <div className="absolute top-1/3 -left-32 size-96 rounded-full bg-nirvash-red/10 blur-3xl ambient-pulse" />
       <div className="absolute bottom-1/4 -right-24 size-80 rounded-full bg-nirvash-ruby/10 blur-3xl ambient-pulse" />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: copy + capabilities */}
           <div>

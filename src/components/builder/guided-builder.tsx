@@ -77,7 +77,7 @@ export function GuidedBuilder() {
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
   return (
-    <div className="min-h-screen bg-[#212121] text-white flex flex-col">
+    <div className="min-h-[100dvh] bg-[#212121] text-white flex flex-col">
       {/* ambient */}
       <div className="fixed inset-0 red-ambient opacity-40 pointer-events-none" />
 

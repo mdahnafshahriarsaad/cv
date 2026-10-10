@@ -27,7 +27,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="bg-[#212121] min-h-screen flex flex-col">
+    <div className="bg-[#212121] min-h-[100dvh] flex flex-col grain-overlay">
       <Navbar onNavigate={onNavigate} />
       <main className="flex-1">
         <Hero />

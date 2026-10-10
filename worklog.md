@@ -111,3 +111,37 @@ Stage Summary:
 - Back to Editor preserves all data (verified: Alex Morgan, CV name, all sections intact)
 - Dedicated preview page with Back/Download/Print/Template actions
 - Lint clean, no console errors
+
+---
+Task ID: 13
+Agent: orchestrator
+Task: Apply all 13 taste-skills to Nirvash CV Maker
+
+Work Log:
+- Read all 13 skill SKILL.md files: stitch-design-taste, high-end-visual-design, minimalist-ui, redesign-existing-projects, design-taste-frontend, brandkit, image-to-code, industrial-brutalist-ui, gpt-taste, imagegen-frontend-web, imagegen-frontend-mobile, full-output-enforcement, design-taste-frontend-v1
+- Synthesized cross-cutting directives and audited project against them
+- KEY VIOLATIONS FIXED:
+  1. Inter font BANNED → switched to Geist (next/font/google) across layout.tsx + globals.css
+  2. h-screen → min-h-[100dvh] / h-[100dvh] in editor + preview page (iOS Safari jump fix)
+  3. 3-column equal card grid BANNED → redesigned template showcase as asymmetric bento (1 large col-span-3 + 2 small col-span-2 stacked)
+  4. Linear/ease-in-out BANNED → all transitions now use cubic-bezier(0.16, 1, 0.3, 1) or cubic-bezier(0.32, 0.72, 0, 1)
+  5. Missing button-in-button trailing icon → created ButtonArrow component (nested circular wrapper that translates diagonally on hover)
+  6. Missing text-wrap: balance → added to h1-h4 in globals.css
+  7. Missing tabular-nums → added font-variant-numeric: tabular-nums + tnum to body font-feature-settings
+  8. Generic shadows → tinted all paper-shadows to charcoal hue (rgba(33,33,33,...) not rgba(0,0,0,...))
+  9. Missing grain overlay → added .grain-overlay::before (fixed, pointer-events-none, SVG noise at 2.5% opacity)
+  10. Insufficient spacing → increased all section padding to py-24 sm:py-32 lg:py-40
+- Added premium utility classes: .shadow-diffuse, .bezel-shell/.bezel-core (double-bezel nested card), .ease-premium/.ease-smooth/.ease-spring
+- Applied ButtonArrow to all primary CTAs: hero, final CTA, two-methods, template showcase
+- Updated reveal.tsx to use cubic-bezier(0.16, 1, 0.3, 1) with 0.7s duration
+- Updated How It Works timeline easing from easeInOut to premium cubic-bezier
+
+Stage Summary:
+- All 13 skills' cross-cutting directives applied to the Nirvash CV Maker
+- Font: Geist (body) + Manrope (display) — Inter completely removed
+- Layout: asymmetric bento grids, no 3-column equal cards, min-h-[100dvh] everywhere
+- Motion: custom cubic-bezier(0.16, 1, 0.3, 1) everywhere, no linear/ease-in-out
+- Components: button-in-button trailing icon, double-bezel card architecture utilities, tinted shadows
+- Polish: grain overlay, text-wrap: balance, tabular-nums, generous py-24+ spacing
+- Lint clean, no console errors, editor + preview verified working
+- VLM-rated 8.5/10 premium feel with confirmed button-in-button pattern + grain texture

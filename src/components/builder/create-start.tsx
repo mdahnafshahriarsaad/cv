@@ -41,7 +41,7 @@ export function CreateStartPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#212121] text-white flex flex-col">
+    <div className="relative min-h-[100dvh] bg-[#212121] text-white flex flex-col">
       <div className="absolute inset-0 red-ambient opacity-70" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-nirvash-red/8 blur-3xl" />
 

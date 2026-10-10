@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
-import { ChevronDown, ArrowRight } from "lucide-react";
-import { BrandButton } from "@/components/shared/brand-button";
+import { ChevronDown } from "lucide-react";
+import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
 import { CVRenderer } from "@/components/templates/cv-renderer";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { useAppStore } from "@/lib/store/app-store";
@@ -42,7 +42,7 @@ export function Hero() {
   };
 
   return (
-    <section id="home" ref={containerRef} className="relative min-h-screen w-full overflow-hidden bg-[#212121]">
+    <section id="home" ref={containerRef} className="relative min-h-[100dvh] w-full overflow-hidden bg-[#212121]">
       {/* Layer 1: background video — 6px blur, visible */}
       <motion.video
         className="absolute inset-0 h-full w-full object-cover"
@@ -84,7 +84,7 @@ export function Hero() {
                   className="block"
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.25 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.7, delay: 0.25 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
                 >
                   {line}
                 </motion.span>
@@ -93,7 +93,7 @@ export function Hero() {
                 className="block text-nirvash-red"
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.7, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
               >
                 A Better CV.
               </motion.span>
@@ -113,12 +113,12 @@ export function Hero() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
+              transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="mt-9 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
             >
               <BrandButton variant="primary" size="xl" onClick={startCreate} className="group">
                 Create My CV
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                <ButtonArrow />
               </BrandButton>
               <BrandButton
                 variant="secondary"

@@ -1,9 +1,9 @@
 "use client";
 
 import { Reveal } from "@/components/shared/reveal";
-import { BrandButton } from "@/components/shared/brand-button";
+import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
 import { useAppStore } from "@/lib/store/app-store";
-import { ArrowRight, MessageSquareText, FileText, Sparkles } from "lucide-react";
+import { MessageSquareText, FileText, Sparkles } from "lucide-react";
 
 export function TwoMethods() {
   const setView = useAppStore((s) => s.setView);
@@ -22,7 +22,7 @@ export function TwoMethods() {
 
   return (
     <section id="features" className="bg-[#F5F5F5]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40">
         <Reveal className="max-w-2xl">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-nirvash-red uppercase">
             Two Ways to Create
@@ -74,8 +74,8 @@ export function TwoMethods() {
                 </div>
 
                 <div className="mt-8">
-                  <BrandButton variant="primary" size="lg" onClick={startGuided}>
-                    Start Guided <ArrowRight className="size-4" />
+                  <BrandButton variant="primary" size="lg" onClick={startGuided} className="group">
+                    Start Guided <ButtonArrow />
                   </BrandButton>
                 </div>
               </div>
@@ -123,8 +123,8 @@ export function TwoMethods() {
                 </div>
 
                 <div className="mt-8">
-                  <BrandButton variant="secondaryLight" size="lg" onClick={startForm}>
-                    Open Form <ArrowRight className="size-4" />
+                  <BrandButton variant="secondaryLight" size="lg" onClick={startForm} className="group">
+                    Open Form <ButtonArrow />
                   </BrandButton>
                 </div>
               </div>

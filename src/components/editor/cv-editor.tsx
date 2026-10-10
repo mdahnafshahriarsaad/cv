@@ -62,7 +62,7 @@ export function CVEditor() {
 
   if (!cv) {
     return (
-      <div className="min-h-screen bg-[#212121] text-white flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#212121] text-white flex items-center justify-center">
         <p className="text-white/50">No CV loaded.</p>
       </div>
     );
@@ -81,7 +81,7 @@ export function CVEditor() {
   };
 
   return (
-    <div className="h-screen bg-[#212121] text-white flex flex-col overflow-hidden">
+    <div className="min-h-[100dvh] h-[100dvh] bg-[#212121] text-white flex flex-col overflow-hidden">
       {/* Top bar */}
       <header className="shrink-0 border-b border-white/8 bg-[#1a1a1a]">
         <div className="px-3 sm:px-5 h-14 flex items-center justify-between gap-3">

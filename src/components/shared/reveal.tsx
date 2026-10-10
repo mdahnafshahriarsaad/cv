@@ -9,7 +9,7 @@ export const fadeUp: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -36,7 +36,7 @@ export function Reveal({
       ref={ref}
       initial={{ opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
       className={cn(className)}
     >
       {children}

@@ -1,9 +1,8 @@
 "use client";
 
 import { Reveal } from "@/components/shared/reveal";
-import { BrandButton } from "@/components/shared/brand-button";
+import { BrandButton, ButtonArrow } from "@/components/shared/brand-button";
 import { useAppStore } from "@/lib/store/app-store";
-import { ArrowRight } from "lucide-react";
 
 export function FinalCTA() {
   const setView = useAppStore((s) => s.setView);
@@ -50,10 +49,10 @@ export function FinalCTA() {
             <BrandButton
               variant="primary"
               size="xl"
-              className="relative px-10"
+              className="relative px-10 group"
               onClick={start}
             >
-              Create My CV for Free <ArrowRight className="size-4" />
+              Create My CV for Free <ButtonArrow />
             </BrandButton>
           </div>
         </Reveal>

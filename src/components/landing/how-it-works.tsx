@@ -17,7 +17,7 @@ export function HowItWorks() {
   return (
     <section id="how" className="relative bg-[#212121] text-white overflow-hidden">
       <div className="absolute inset-0 red-ambient opacity-50" />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40">
         <Reveal className="max-w-2xl">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-nirvash-red uppercase">
             How It Works
@@ -39,16 +39,16 @@ export function HowItWorks() {
                 className="h-full bg-gradient-to-r from-nirvash-red/60 via-nirvash-red/40 to-transparent origin-left"
                 initial={{ scaleX: 0 }}
                 animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
-                transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
+                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
               />
             </div>
 
             {STEPS.map((s, i) => (
               <motion.div
                 key={s.n}
-                initial={{ opacity: 0, y: 20 }}
-                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.2 + i * 0.35, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 24 }}
+                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                transition={{ duration: 0.7, delay: 0.2 + i * 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="relative flex flex-col items-start"
               >
                 {/* dot + number row */}

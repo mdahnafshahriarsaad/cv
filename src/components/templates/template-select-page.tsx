@@ -70,7 +70,7 @@ export function TemplateSelectPage() {
   }, [featured]);
 
   return (
-    <div className="min-h-screen bg-[#212121] text-white flex flex-col">
+    <div className="min-h-[100dvh] bg-[#212121] text-white flex flex-col">
       <div className="fixed inset-0 red-ambient opacity-30 pointer-events-none" />
 
       {/* Top bar */}
