@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { MagneticButton, MagneticCTA } from "@/components/shared/magnetic-button";
 import { HeroCVStack } from "@/components/landing/hero-cv-stack";
+import { Floating3DObjects } from "@/components/landing/floating-3d-objects";
 import { createSampleCV } from "@/lib/cv-data/types";
 import { useAppStore } from "@/lib/store/app-store";
 
@@ -57,6 +58,9 @@ export function Hero() {
           backgroundSize: "32px 32px",
         }}
       />
+
+      {/* Layer 3d: floating 3D geometric objects */}
+      <Floating3DObjects />
 
       {/* Layer 4: content */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 lg:pt-36 pb-20">

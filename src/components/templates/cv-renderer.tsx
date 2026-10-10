@@ -308,7 +308,7 @@ export function CVRenderer({ cv, className, width = 794, showShadow = true, high
       style={containerStyle}
       data-template={effectiveDef.id}
     >
-      <div style={{ fontFamily: fonts.body, padding: `${48 * mScale}px ${56 * mScale}px` }} className={cn(pad, gap, "flex flex-col")}>
+      <div style={{ fontFamily: fonts.body, padding: `${48 * mScale}px ${56 * mScale}px`, flex: "1 1 auto", display: "flex", flexDirection: "column", minHeight: fitContent ? "auto" : H }} className={cn(pad, gap, "flex flex-col")}>
         <ArchetypeRenderer def={effectiveDef} cv={cv} fonts={fonts} sectionHighlight={sectionHighlight} />
       </div>
     </div>
@@ -431,9 +431,9 @@ function LeftSidebar({ def, cv, headingStyle, sectionHighlight }: any) {
   const p = cv.personalInfo;
   const { surface, surfaceText, accent } = def.palette;
   return (
-    <div className="grid grid-cols-[1fr_1.6fr] -mx-14 -my-12 min-h-[calc(100%+96px)]">
+    <div className="grid grid-cols-[1fr_1.6fr] -mx-14 -my-12 flex-1" style={{ minHeight: "100%" }}>
       {/* sidebar */}
-      <aside className="p-7" style={{ background: surface, color: surfaceText }}>
+      <aside className="p-7 flex flex-col" style={{ background: surface, color: surfaceText }}>
         {def.photoShape !== "none" && p.photo && (
           <div className="mb-5 flex justify-center">
             <PhotoView photo={p.photo} shape={def.photoShape} size={100} />
@@ -492,7 +492,7 @@ function RightSidebar({ def, cv, headingStyle, sectionHighlight }: any) {
   const p = cv.personalInfo;
   const { surface, surfaceText, accent } = def.palette;
   return (
-    <div className="grid grid-cols-[1.6fr_1fr] -mx-14 -my-12 min-h-[calc(100%+96px)]">
+    <div className="grid grid-cols-[1.6fr_1fr] -mx-14 -my-12 flex-1" style={{ minHeight: "100%" }}>
       <main className="p-8" style={{ background: def.palette.paper, color: def.palette.ink }}>
         <header className="pb-4 mb-5" style={sectionHighlight("personal")}>
           <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
@@ -669,7 +669,7 @@ function SplitHorizontal({ def, cv, headingStyle, sectionHighlight }: any) {
   const p = cv.personalInfo;
   const { accent, surface, surfaceText } = def.palette;
   return (
-    <div className="-mx-14 -my-12 min-h-[calc(100%+96px)] flex flex-col">
+    <div className="-mx-14 -my-12 flex-1 flex flex-col" style={{ minHeight: "100%" }}>
       <header className="p-8 pb-6" style={{ background: surface, color: surfaceText, ...sectionHighlight("personal") }}>
         <div className="flex items-center gap-4">
           {def.photoShape !== "none" && p.photo && <PhotoView photo={p.photo} shape={def.photoShape} size={72} />}

@@ -236,3 +236,24 @@ Stage Summary:
 - Preview: fitContent mode removes empty A4 white space, Fit Width default makes CV larger and clearer
 - Print source verified: has content (1 child, 794px width, proper CVRenderer)
 - Lint clean, no console errors
+
+---
+Task ID: 17
+Agent: orchestrator
+Task: Fix empty CV download, laggy nav, add 3D objects + more animations
+
+Work Log:
+- Analyzed user's downloaded PDF: broken layout from old new-window download system (no Tailwind CSS), sidebar not extending full height, huge empty white space
+- Fixed CVRenderer sidebar layouts (LeftSidebar, RightSidebar, SplitHorizontal): changed from min-h-[calc(100%+96px)] to flex-1 + minHeight:100% so sidebars extend to full page height
+- Fixed CVRenderer container: added flex:1 + display:flex + flexDirection:column + minHeight so inner content stretches to fill A4
+- Navigation redesign: open on HOVER (not click) with 200ms close delay, smoother spring physics (stiffness:400, damping:35), menu icon lines animate width on hover, no layout thrashing
+- Built Floating3DObjects component: 3D rotating cube (6 faces, preserve-3d), rotating pyramid, rotating ring with inner circle, 5 floating dots with staggered animations
+- Built ScrollProgress component: thin red gradient bar at top using useScroll + useSpring (stiffness:200, damping:30)
+- Added 3D objects + scroll progress to hero/landing page
+
+Stage Summary:
+- Download: window.print() with @media print (from previous task) + sidebar height fix = clean A4 PDF with full-height sidebars
+- Nav: hover-to-open with smooth spring, no click needed, no lag
+- 3D: rotating cube, pyramid, ring, floating dots add depth and visual interest
+- Scroll progress: spring-physics bar at top fills as user scrolls
+- Lint clean, no console errors
