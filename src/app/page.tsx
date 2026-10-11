@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useAppStore } from "@/lib/store/app-store";
-import { LoadingScreen } from "@/components/shared/loading-screen";
 import { LandingPage } from "@/components/landing/landing-page";
 import { CreateStartPage } from "@/components/builder/create-start";
 import { GuidedBuilder } from "@/components/builder/guided-builder";
@@ -13,24 +12,21 @@ import { PreviewPage } from "@/components/editor/preview-page";
 
 export default function Home() {
   const view = useAppStore((s) => s.view);
-  const showLoading = useAppStore((s) => s.showLoading);
 
+  // Skip loading screen — load instantly
   useEffect(() => {
-    showLoading(900);
-  }, [showLoading]);
+    useAppStore.setState({ loading: false });
+  }, []);
 
   return (
-    <>
-      <LoadingScreen />
-      <div key={view} className="fade-up">
-        {view === "landing" && <LandingPage />}
-        {view === "create-start" && <CreateStartPage />}
-        {view === "guided-builder" && <GuidedBuilder />}
-        {view === "form-builder" && <FormBuilder />}
-        {view === "templates" && <TemplateSelectPage />}
-        {view === "editor" && <CVEditor />}
-        {view === "preview" && <PreviewPage />}
-      </div>
-    </>
+    <div key={view} className="fade-up">
+      {view === "landing" && <LandingPage />}
+      {view === "create-start" && <CreateStartPage />}
+      {view === "guided-builder" && <GuidedBuilder />}
+      {view === "form-builder" && <FormBuilder />}
+      {view === "templates" && <TemplateSelectPage />}
+      {view === "editor" && <CVEditor />}
+      {view === "preview" && <PreviewPage />}
+    </div>
   );
 }

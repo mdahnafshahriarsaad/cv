@@ -29,7 +29,7 @@ export const useAppStore = create<AppState>((set) => ({
   view: "landing",
   builderMethod: null,
   templatesOrigin: "flow",
-  loading: true,
+  loading: false,
   setView: (v) => set({ view: v }),
   setBuilderMethod: (m) => set({ builderMethod: m }),
   setTemplatesOrigin: (o) => set({ templatesOrigin: o }),

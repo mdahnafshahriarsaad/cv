@@ -309,3 +309,32 @@ Stage Summary:
 - All 54 templates now render profile photos (was 8, now 54)
 - 13 profile images confirmed rendering across the page
 - Lint clean, no console errors
+
+---
+Task ID: 20
+Agent: orchestrator
+Task: 3D perspective CV carousel + remove loading animation + auto-moving slider
+
+Work Log:
+- Analyzed reference video (Noa Vale landing page): key feature is 3D card carousel with perspective — center card frontal/largest, side cards rotated on Y-axis creating fanned-out effect, smooth 3D transitions
+- Removed loading screen: deleted LoadingScreen import from page.tsx, set loading:false in app-store, page now loads instantly
+- Rebuilt CVSliderSection as 3D perspective carousel:
+  - Each card positioned using getCardStyle() which calculates rotateY, translateX, translateZ, scale, opacity based on distance from active index
+  - Active card (offset 0): rotateY(0deg), full scale, full opacity, red border + glow shadow, "Use This" badge
+  - Side cards (offset ±1): rotateY(∓35deg), translateX(±55%), translateZ(-120px), scale(0.85), opacity(0.7), blur(1.5px)
+  - Far cards (offset ±2): rotateY(∓70deg), more pushed back, scale(0.7), opacity(0.4), blur(3px)
+  - Cards beyond ±2: hidden (display:none)
+  - perspective: 1400px, transformStyle: preserve-3d
+  - Smooth 0.7s cubic-bezier(0.16, 1, 0.3, 1) transition on all transforms
+- Auto-advance: every 3.5s, pauses on hover (isHovered state)
+- Clickable: click active card → loads sample CV + sets template + opens editor; click side card → makes it active
+- Navigation: Previous/Next arrow buttons + dot indicators (active dot expands to pill)
+- "Browse all 54 templates" link at bottom
+- Verified: auto-advance working (Canvas → Apex after 4s), 8 template cards rendering with 3D transforms, all controls functional
+
+Stage Summary:
+- Loading screen removed — page loads instantly
+- 3D perspective carousel: center card frontal, side cards rotated/fanned in 3D space with blur and depth
+- Auto-moving: advances every 3.5s, pauses on hover
+- Clickable: click center card to use template, click side card to bring to center
+- Lint clean, no console errors
