@@ -13,13 +13,7 @@ import { AIFeature } from "@/components/landing/ai-feature";
 import { StatsSection } from "@/components/landing/stats-section";
 import { CVSliderSection } from "@/components/landing/cv-slider-section";
 import { FinalCTA } from "@/components/landing/final-cta";
-import dynamic from "next/dynamic";
-
-// Load the 3D airplane only on client (no SSR for canvas)
-const ScrollPaperAirplane = dynamic(
-  () => import("@/components/3d/scroll-paper-airplane").then((m) => m.ScrollPaperAirplane),
-  { ssr: false }
-);
+import { ScrollPaperAirplane } from "@/components/3d/scroll-paper-airplane";
 
 export function LandingPage() {
   const onNavigate = React.useCallback((target: string) => {
