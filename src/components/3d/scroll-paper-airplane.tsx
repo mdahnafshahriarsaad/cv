@@ -2,6 +2,25 @@
 
 import * as React from "react";
 
+/**
+ * ScrollPaperAirplane — a persistent paper airplane that flies
+ * through the entire website as the user scrolls.
+ *
+ * Uses an SVG with 3D-style gradients for a realistic folded-paper look.
+ * The airplane has distinct top/bottom wings, a raised spine shadow,
+ * a notched tail, and a ruby-red center fold accent.
+ *
+ * Features:
+ * - Scroll-driven Catmull-Rom flight path
+ * - Damped scroll interpolation (smooth both directions)
+ * - Nose-first orientation (direction calculated from actual movement)
+ * - Scroll direction reversal (nose follows travel direction)
+ * - Banking based on path curvature
+ * - Idle floating when not scrolling
+ * - Motion trail
+ * - pointer-events: none, z-index: 5
+ * - Responsive + reduced-motion support
+ */
 export function ScrollPaperAirplane() {
   const airplaneRef = React.useRef<HTMLDivElement>(null);
   const trailRef = React.useRef<HTMLDivElement>(null);
@@ -15,6 +34,7 @@ export function ScrollPaperAirplane() {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
 
+    // Scroll tracking
     let scrollRaf = -1;
     const updateScroll = () => {
       const sh = document.documentElement.scrollHeight - window.innerHeight;
@@ -30,7 +50,7 @@ export function ScrollPaperAirplane() {
 
     // Flight path [x(vw), y(vh)]
     const wp: [number, number][] = [
-      [72, 22], [48, 14], [18, 25], [-8, 40], [-18, 56],
+      [72, 22], [48, 14], [18, 25], [-5, 38], [-15, 55],
       [-2, 68], [22, 72], [48, 56], [32, 40], [15, 47],
     ];
 
@@ -47,13 +67,14 @@ export function ScrollPaperAirplane() {
       return [cr(p0[0],p1[0],p2[0],p3[0],lt), cr(p0[1],p1[1],p2[1],p3[1],lt)];
     };
 
+    // Animation loop
     let raf = 0;
     let running = true;
     let smooth = 0;
     let smoothAngle = 0;
     let lastSmooth = 0;
+    let lastDir = 1;
     let idleTime = 0;
-    let lastDir = 1; // remember last scroll direction for idle orientation
 
     const animate = () => {
       if (!running) return;
@@ -73,29 +94,17 @@ export function ScrollPaperAirplane() {
         if (dir !== 0) lastDir = dir;
         const effectiveDir = dir !== 0 ? dir : lastDir;
         const eps = 0.005;
-        // Sample in the direction of travel:
-        // forward (dir=1): sample ahead (t+eps)
-        // backward (dir=-1): sample behind (t-eps)
-        // The sampled point is the NEXT position in the travel direction.
         const sT = effectiveDir >= 0 ? Math.min(1, t + eps) : Math.max(0, t - eps);
         const [xs, ys] = getPos(sT);
-        // Direction = next - current (always, regardless of travel direction)
-        // This gives the actual direction of travel.
         const dx = xs - x;
         const dy = ys - y;
 
-        // SVG nose points RIGHT at 0°. atan2(dy, dx) gives the angle.
-        // BUT: CSS rotate() rotates clockwise, while atan2 measures
-        // counter-clockwise from +X. In screen coordinates, +Y is DOWN.
-        // atan2(dy, dx) with screen coords: dy>0 = downward = clockwise.
-        // This MATCHES CSS rotate(). So the angle is directly correct.
         let targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-        // Smooth angle — snap quickly when direction reverses to avoid backward flight
+        // Smooth angle — snap quickly when direction reverses
         let diff = targetAngle - smoothAngle;
         while (diff > 180) diff -= 360;
         while (diff < -180) diff += 360;
-        // Large diff (>60°) means direction reversed — snap fast
         const angleSpeed = Math.abs(diff) > 60 ? 0.5 : 0.15;
         smoothAngle += diff * angleSpeed;
 
@@ -141,6 +150,7 @@ export function ScrollPaperAirplane() {
 
   return (
     <>
+      {/* Motion trail */}
       <div
         ref={trailRef}
         className="fixed z-[4] pointer-events-none"
@@ -149,6 +159,8 @@ export function ScrollPaperAirplane() {
       >
         <PaperAirplaneSVG size={isMobile ? 40 : 70} />
       </div>
+
+      {/* Airplane */}
       <div
         ref={airplaneRef}
         className="fixed z-[5] pointer-events-none"
@@ -169,14 +181,13 @@ export function ScrollPaperAirplane() {
  *
  * The nose is at the RIGHT (x≈90) — sharp and pointed.
  * The tail is at the LEFT (x≈10) — wide and flat with a notch.
- * This makes it unambiguous which end is the front.
  *
- * The 3D effect comes from:
- * - Two-tone wings (top lighter, bottom darker)
- * - A visible center spine with shadow
- * - Wing crease lines that suggest folded paper
- * - A subtle gradient on the top wing for depth
- * - The tail has a distinct notch (V-shape) unlike the sharp nose
+ * 3D effect achieved through:
+ * - Two-tone wings with gradients (top lighter, bottom darker)
+ * - Visible center spine with shadow
+ * - Wing crease lines suggesting folded paper
+ * - Tail notch (V-shape) distinctly different from sharp nose
+ * - Nose tip highlight + red accent dot
  */
 function PaperAirplaneSVG({ size }: { size: number }) {
   const id = React.useId().replace(/:/g, "");
@@ -210,8 +221,6 @@ function PaperAirplaneSVG({ size }: { size: number }) {
       </defs>
 
       {/* ═══ TOP WING (upper half — lighter, catches light) ═══ */}
-      {/* Sharp nose at right (90,50), sweeps to wing tip at left-top (10,15),
-          inner crease at (55,50) */}
       <path
         d="M90 50 L10 15 L55 50 Z"
         fill={`url(#grad-top-${id})`}
@@ -220,8 +229,6 @@ function PaperAirplaneSVG({ size }: { size: number }) {
       />
 
       {/* ═══ BOTTOM WING (lower half — darker, in shadow) ═══ */}
-      {/* Sharp nose at right (90,50), inner crease at (55,50),
-          sweeps to wing tip at left-bottom (10,85) */}
       <path
         d="M90 50 L55 50 L10 85 Z"
         fill={`url(#grad-bot-${id})`}
@@ -230,7 +237,6 @@ function PaperAirplaneSVG({ size }: { size: number }) {
       />
 
       {/* ═══ CENTER SPINE (the folded keel — visible 3D ridge) ═══ */}
-      {/* Thin band from nose to inner crease with shadow gradient */}
       <path
         d="M90 50 L55 50 L55 52 L90 51 Z"
         fill={`url(#grad-spine-${id})`}
@@ -238,7 +244,6 @@ function PaperAirplaneSVG({ size }: { size: number }) {
       />
 
       {/* ═══ TAIL NOTCH (V-shape cut at the back — makes tail clearly distinct from nose) ═══ */}
-      {/* This creates a visible notch at the left end (tail) */}
       <path
         d="M10 15 L18 50 L10 85 Z"
         fill="#212121"
