@@ -3,11 +3,19 @@
 import * as React from "react";
 
 /**
- * ScrollPaperAirplane — a persistent paper airplane that flies
- * through the website as the user scrolls.
+ * ScrollPaperAirplane — premium 3D-style paper airplane.
  *
- * SVG-based for maximum performance (no WebGL overhead).
- * Small, smooth, and elegant.
+ * Uses a detailed multi-layer SVG with:
+ * - Realistic folded paper shading (multiple gradient layers)
+ * - Visible wing thickness and edge bevels
+ * - Raised center spine with depth shadow
+ * - Specular highlights on wing surfaces
+ * - Paper texture via subtle noise pattern
+ * - Ruby-red accent along the fold
+ * - Size: 80px desktop (elegant, not tiny, not huge)
+ *
+ * Animation: smooth scroll-driven Catmull-Rom flight path
+ * with banking, idle float, and direction-aware nose orientation.
  */
 export function ScrollPaperAirplane() {
   const airplaneRef = React.useRef<HTMLDivElement>(null);
@@ -22,7 +30,6 @@ export function ScrollPaperAirplane() {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
 
-    // Scroll tracking — passive, rAF-batched
     let scrollRaf = -1;
     const updateScroll = () => {
       const sh = document.documentElement.scrollHeight - window.innerHeight;
@@ -36,13 +43,12 @@ export function ScrollPaperAirplane() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", () => { checkMobile(); onScroll(); }, { passive: true });
 
-    // Flight path — smooth S-curve across the page
+    // Flight path
     const wp: [number, number][] = [
-      [78, 28], [58, 18], [30, 30], [5, 45], [-10, 58],
-      [5, 68], [30, 72], [55, 58], [40, 42], [22, 50],
+      [76, 26], [56, 16], [28, 28], [4, 43], [-8, 56],
+      [4, 67], [28, 71], [53, 57], [38, 41], [20, 49],
     ];
 
-    // Catmull-Rom interpolation
     const cr = (p0: number, p1: number, p2: number, p3: number, t: number) => {
       const t2 = t * t, t3 = t2 * t;
       return 0.5 * (2*p1 + (-p0+p2)*t + (2*p0-5*p1+4*p2-p3)*t2 + (-p0+3*p1-3*p2+p3)*t3);
@@ -56,7 +62,6 @@ export function ScrollPaperAirplane() {
       return [cr(p0[0],p1[0],p2[0],p3[0],lt), cr(p0[1],p1[1],p2[1],p3[1],lt)];
     };
 
-    // Animation loop — single rAF, no React state updates
     let raf = 0;
     let running = true;
     let smooth = 0;
@@ -76,15 +81,12 @@ export function ScrollPaperAirplane() {
 
       if (el) {
         const target = scrollRef.current;
-        // Damped scroll — smooth but responsive
         smooth += (target - smooth) * Math.min(dt * 8, 1);
         const t = Math.max(0, Math.min(1, smooth));
         const isScrolling = Math.abs(target - smooth) > 0.003;
 
-        // Position
         const [x, y] = getPos(t);
 
-        // Direction from actual movement
         const dir = smooth > lastSmooth + 0.0002 ? 1 : smooth < lastSmooth - 0.0002 ? -1 : 0;
         if (dir !== 0) lastDir = dir;
         const ed = dir !== 0 ? dir : lastDir;
@@ -94,39 +96,31 @@ export function ScrollPaperAirplane() {
         const dx = xs - x;
         const dy = ys - y;
 
-        // Angle — nose points in travel direction
         const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-        // Smooth angle with fast snap on reversal
         let diff = targetAngle - smoothAngle;
         while (diff > 180) diff -= 360;
         while (diff < -180) diff += 360;
         const speed = Math.abs(diff) > 60 ? 0.4 : 0.18;
         smoothAngle += diff * speed;
 
-        // Banking
         const sT2 = Math.min(1, t + eps * 2);
         const [xs2, ys2] = getPos(sT2);
         const cross = (xs - x) * (ys2 - ys) - (ys - y) * (xs2 - xs);
         const bank = Math.max(-12, Math.min(12, cross * 60));
 
-        // Idle
         if (!isScrolling) idleTime += dt; else idleTime *= 0.9;
         const idleY = Math.sin(idleTime * 0.8) * 0.8;
         const idleRot = Math.sin(idleTime * 0.5) * 1;
 
-        // Scale — smaller for elegance
         const mobile = window.innerWidth < 768;
-        const scale = (1 - t * 0.06) * (mobile ? 0.45 : 0.6);
+        const scale = (1 - t * 0.06) * (mobile ? 0.5 : 0.72);
         const vw = window.innerWidth / 100;
         const vh = window.innerHeight / 100;
-
         const finalAngle = smoothAngle + idleRot + bank * 0.2;
 
         el.style.transform = `translate3d(${x * vw}px, ${(y + idleY) * vh}px, 0) rotate(${finalAngle}deg) scale(${scale})`;
         el.style.opacity = String(Math.max(0.85, 0.95 - Math.abs(t - 0.5) * 0.05));
 
-        // Trail — only when moving
         if (trail) {
           const tdx = -dx * 2.5, tdy = -dy * 2.5;
           trail.style.transform = `translate3d(${(x + tdx) * vw}px, ${(y + tdy) * vh}px, 0) rotate(${smoothAngle}deg) scale(${scale * 0.45})`;
@@ -139,7 +133,6 @@ export function ScrollPaperAirplane() {
     };
 
     raf = requestAnimationFrame(animate);
-
     return () => {
       running = false;
       cancelAnimationFrame(raf);
@@ -149,70 +142,135 @@ export function ScrollPaperAirplane() {
 
   return (
     <>
-      {/* Trail */}
       <div
         ref={trailRef}
         className="fixed z-[4] pointer-events-none"
         aria-hidden="true"
         style={{ top: 0, left: 0, willChange: "transform, opacity", filter: "blur(6px)" }}
       >
-        <PlaneSVG size={isMobile ? 24 : 36} />
+        <PlaneSVG size={isMobile ? 28 : 42} />
       </div>
-
-      {/* Airplane */}
       <div
         ref={airplaneRef}
         className="fixed z-[5] pointer-events-none"
         aria-hidden="true"
         style={{
           top: 0, left: 0, willChange: "transform, opacity",
-          filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.5)) drop-shadow(0 0 8px rgba(255,67,54,0.1))",
+          filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(255,67,54,0.1))",
         }}
       >
-        <PlaneSVG size={isMobile ? 36 : 56} />
+        <PlaneSVG size={isMobile ? 42 : 80} />
       </div>
     </>
   );
 }
 
 /**
- * Compact, elegant paper airplane SVG.
- * Nose at right (x=92), tail with notch at left (x=8).
- * 3D effect via two-tone wings + spine shadow + gradients.
+ * Premium 3D-style paper airplane SVG.
+ *
+ * Multiple layers create genuine depth illusion:
+ * 1. Bottom wing (darkest — in shadow)
+ * 2. Top wing (gradient — catches light)
+ * 3. Wing edge thickness (bevel effect)
+ * 4. Center spine (raised ridge with shadow)
+ * 5. Specular highlight strip
+ * 6. Fold crease lines
+ * 7. Red accent
+ * 8. Nose tip
+ * 9. Tail notch
  */
 function PlaneSVG({ size }: { size: number }) {
   const id = React.useId().replace(/:/g, "");
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id={`gt-${id}`} x1="10%" y1="10%" x2="90%" y2="60%">
-          <stop offset="0%" stopColor="#EAEAEA" />
-          <stop offset="40%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#F5F5F5" />
-        </linearGradient>
-        <linearGradient id={`gb-${id}`} x1="10%" y1="90%" x2="90%" y2="40%">
-          <stop offset="0%" stopColor="#C8C8C8" />
-          <stop offset="50%" stopColor="#DCDCDC" />
+        {/* Top wing gradient — light from upper-left */}
+        <linearGradient id={`gt-${id}`} x1="5%" y1="5%" x2="85%" y2="65%">
+          <stop offset="0%" stopColor="#DCDCDC" />
+          <stop offset="25%" stopColor="#F8F8F8" />
+          <stop offset="55%" stopColor="#FFFFFF" />
           <stop offset="100%" stopColor="#E8E8E8" />
         </linearGradient>
+        {/* Bottom wing gradient — darker, in shadow */}
+        <linearGradient id={`gb-${id}`} x1="5%" y1="95%" x2="85%" y2="35%">
+          <stop offset="0%" stopColor="#B0B0B0" />
+          <stop offset="40%" stopColor="#C8C8C8" />
+          <stop offset="100%" stopColor="#D8D8D8" />
+        </linearGradient>
+        {/* Spine ridge — dark shadow in the fold valley */}
+        <linearGradient id={`gs-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#999999" />
+          <stop offset="50%" stopColor="#AAAAAA" />
+          <stop offset="100%" stopColor="#888888" />
+        </linearGradient>
+        {/* Specular highlight — bright strip on top wing */}
+        <linearGradient id={`gh-${id}`} x1="30%" y1="20%" x2="70%" y2="50%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
+          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+        </linearGradient>
+        {/* Paper texture — subtle noise */}
+        <filter id={`noise-${id}`}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.04" />
+          </feComponentTransfer>
+          <feComposite operator="over" in2="SourceGraphic" />
+        </filter>
       </defs>
-      {/* Top wing */}
-      <path d="M92 50 L8 12 L54 50 Z" fill={`url(#gt-${id})`} stroke="#DDD" strokeWidth="0.4" />
-      {/* Bottom wing */}
-      <path d="M92 50 L54 50 L8 88 Z" fill={`url(#gb-${id})`} stroke="#CCC" strokeWidth="0.4" />
-      {/* Spine shadow */}
-      <path d="M92 50 L54 50 L54 51.5 L92 50.8 Z" fill="#B8B8B8" opacity="0.4" />
-      {/* Tail notch */}
-      <path d="M8 12 L16 50 L8 88 Z" fill="#212121" opacity="0.12" />
-      <path d="M8 12 L16 50 L8 88" stroke="#C0C0C0" strokeWidth="0.4" fill="none" />
-      {/* Red accent line */}
-      <line x1="18" y1="50" x2="90" y2="50" stroke="#FF4336" strokeWidth="1.2" opacity="0.75" strokeLinecap="round" />
-      {/* Wing creases */}
-      <line x1="54" y1="50" x2="8" y2="12" stroke="#D0D0D0" strokeWidth="0.3" opacity="0.5" />
-      <line x1="54" y1="50" x2="8" y2="88" stroke="#D0D0D0" strokeWidth="0.3" opacity="0.5" />
-      {/* Nose tip */}
-      <circle cx="91" cy="50" r="1" fill="#FFF" />
-      <circle cx="90" cy="50" r="0.6" fill="#FF4336" opacity="0.6" />
+
+      {/* ═══ Layer 1: Bottom wing (darkest) ═══ */}
+      <path
+        d="M92 50 L52 50 L8 88 Z"
+        fill={`url(#gb-${id})`}
+      />
+
+      {/* ═══ Layer 2: Wing edge thickness (bevel — gives paper volume) ═══ */}
+      <path d="M92 50 L52 50 L8 88 L10 86 L52 51 L91 49 Z" fill="#909090" opacity="0.3" />
+      <path d="M92 50 L52 50 L8 12 L10 14 L52 49 L91 51 Z" fill="#E0E0E0" opacity="0.3" />
+
+      {/* ═══ Layer 3: Top wing (lighter, catches light) ═══ */}
+      <path
+        d="M92 50 L8 12 L52 50 Z"
+        fill={`url(#gt-${id})`}
+      />
+
+      {/* ═══ Layer 4: Specular highlight on top wing ═══ */}
+      <path
+        d="M80 48 L20 18 L45 45 Z"
+        fill={`url(#gh-${id})`}
+      />
+
+      {/* ═══ Layer 5: Center spine (raised ridge shadow) ═══ */}
+      <path
+        d="M92 50 L52 50 L52 53 L92 51 Z"
+        fill={`url(#gs-${id})`}
+        opacity="0.55"
+      />
+      {/* Spine top edge — bright highlight where ridge catches light */}
+      <line x1="52" y1="50" x2="92" y2="50" stroke="#FFFFFF" strokeWidth="0.4" opacity="0.5" />
+
+      {/* ═══ Layer 6: Fold crease lines ═══ */}
+      <line x1="52" y1="50" x2="8" y2="12" stroke="#C5C5C5" strokeWidth="0.35" opacity="0.6" />
+      <line x1="52" y1="50" x2="8" y2="88" stroke="#A0A0A0" strokeWidth="0.35" opacity="0.5" />
+
+      {/* ═══ Layer 7: Tail notch (V-cut — distinguishes tail from nose) ═══ */}
+      <path d="M8 12 L17 50 L8 88 Z" fill="#1a1a1a" opacity="0.1" />
+      <path d="M8 12 L17 50 L8 88" stroke="#B0B0B0" strokeWidth="0.35" fill="none" />
+
+      {/* ═══ Layer 8: Ruby-red accent (center fold line) ═══ */}
+      <line
+        x1="17" y1="50" x2="90" y2="50"
+        stroke="#FF4336" strokeWidth="1.4" opacity="0.75" strokeLinecap="round"
+      />
+
+      {/* ═══ Layer 9: Nose tip ═══ */}
+      <circle cx="91" cy="50" r="1.3" fill="#FFFFFF" />
+      <circle cx="90" cy="50" r="0.7" fill="#FF4336" opacity="0.6" />
+
+      {/* ═══ Paper texture overlay (very subtle) ═══ */}
+      <rect x="0" y="0" width="100" height="100" filter={`url(#noise-${id})`} opacity="0.5" />
     </svg>
   );
 }
