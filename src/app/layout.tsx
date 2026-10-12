@@ -1,20 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Manrope } from "next/font/google";
+import "@fontsource/geist/400.css";
+import "@fontsource/geist/500.css";
+import "@fontsource/geist/600.css";
+import "@fontsource/geist/700.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/manrope/800.css";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Nirvash CV Maker — Your CV. Made Effortlessly.",
@@ -60,7 +54,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geist.variable} ${manrope.variable} antialiased bg-background text-foreground`}
+        className="antialiased bg-background text-foreground"
+        style={{ fontFamily: "'Geist', 'Manrope', ui-sans-serif, system-ui, sans-serif" }}
       >
         {children}
         <Toaster />
