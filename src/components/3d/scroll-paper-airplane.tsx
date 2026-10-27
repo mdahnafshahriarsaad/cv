@@ -1,276 +1,343 @@
 "use client";
 
 import * as React from "react";
+import * as THREE from "three";
+import { createPaperPlane, NIRVASH } from "./paper-plane-model";
 
 /**
- * ScrollPaperAirplane — premium 3D-style paper airplane.
+ * ScrollPaperAirplane — a real 3D folded-paper airplane that flies along a
+ * smooth 3D path driven by scroll progress.
  *
- * Uses a detailed multi-layer SVG with:
- * - Realistic folded paper shading (multiple gradient layers)
- * - Visible wing thickness and edge bevels
- * - Raised center spine with depth shadow
- * - Specular highlights on wing surfaces
- * - Paper texture via subtle noise pattern
- * - Ruby-red accent along the fold
- * - Size: 80px desktop (elegant, not tiny, not huge)
- *
- * Animation: smooth scroll-driven Catmull-Rom flight path
- * with banking, idle float, and direction-aware nose orientation.
+ * - One fixed, pointer-events-none WebGL canvas (single renderer, imperative
+ *   loop — no React state updates per scroll/frame).
+ * - Flight path: centripetal Catmull-Rom curve in world space. Scroll progress
+ *   is the curve parameter, so scrolling up retraces the same path.
+ * - Orientation: the model's forward axis is +Z. Each frame we build a basis
+ *   from the path tangent (flipped when the scroll direction reverses), turn
+ *   it into a quaternion and slerp toward it → the nose always faces the
+ *   direction of travel, with no per-waypoint hacks, flips or snapping.
+ * - Banking comes from the horizontal turn rate; pitch comes from the tangent.
  */
+
+// Waypoints: [x, y] in normalised viewport units (-1..1, y up), z in world units.
+const WAYPOINTS: ReadonlyArray<readonly [number, number, number]> = [
+  [0.52, 0.48, 0.0],
+  [0.12, 0.68, -1.5],
+  [-0.44, 0.44, 0.5],
+  [-0.92, 0.14, 1.8],
+  [-1.16, -0.12, 1.0],
+  [-0.92, -0.34, -0.5],
+  [-0.44, -0.42, -1.2],
+  [0.06, -0.14, 0.2],
+  [-0.24, 0.18, 1.2],
+  [-0.6, 0.02, 0.5],
+];
+
+const TRAIL_POINTS = 28;
+const CAM_Y = 5.2;
+const CAM_Z = 13;
+const FOV = 32;
+
 export function ScrollPaperAirplane() {
-  const airplaneRef = React.useRef<HTMLDivElement>(null);
-  const trailRef = React.useRef<HTMLDivElement>(null);
-  const scrollRef = React.useRef(0);
-  const [isMobile, setIsMobile] = React.useState(false);
+  const mountRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
+    const mount = mountRef.current;
+    if (!mount) return;
 
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = () => window.innerWidth < 768;
+    const weak = isMobile() || (navigator.hardwareConcurrency ?? 8) <= 4;
 
+    // ── renderer (graceful fallback: if WebGL is unavailable we simply render nothing)
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: !isMobile(),
+        powerPreference: "low-power",
+      });
+    } catch {
+      return;
+    }
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    const useShadows = !weak;
+    renderer.shadowMap.enabled = useShadows;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    const canvas = renderer.domElement;
+    canvas.style.cssText = "width:100%;height:100%;display:block;pointer-events:none;";
+    canvas.setAttribute("aria-hidden", "true");
+    mount.appendChild(canvas);
+
+    // ── scene / camera
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
+    camera.position.set(0, CAM_Y, CAM_Z);
+    camera.lookAt(0, 0, 0);
+
+    // ── lighting: soft key (top/side), gentle ambient, subtle ruby rim
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 0.7);
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    key.position.set(-4, 7, 5);
+    if (useShadows) {
+      key.castShadow = true;
+      key.shadow.mapSize.set(512, 512);
+      key.shadow.camera.near = 0.5;
+      key.shadow.camera.far = 30;
+      key.shadow.camera.left = key.shadow.camera.bottom = -2.5;
+      key.shadow.camera.right = key.shadow.camera.top = 2.5;
+      key.shadow.bias = -0.0006;
+      key.shadow.normalBias = 0.02;
+    }
+    const fill = new THREE.DirectionalLight(0xdfe6ff, 0.45);
+    fill.position.set(5, 2, 4);
+    const rim = new THREE.DirectionalLight(new THREE.Color(NIRVASH.red), 0.35);
+    rim.position.set(3, 3, -6);
+    const under = new THREE.DirectionalLight(0xffffff, 0.5);
+    under.position.set(-2, -6, 3);
+    scene.add(hemi, key, fill, rim, under, key.target);
+
+    // ── model (geometry & materials created once and reused)
+    const plane = createPaperPlane({ simple: weak });
+    const model = plane.group;
+    const root = new THREE.Group();
+    root.add(model);
+    scene.add(root);
+
+    // ── restrained fading trail (preallocated, never reallocated per frame)
+    const showTrail = !isMobile() && !reduceMotion;
+    const trailPos = new Float32Array(TRAIL_POINTS * 3);
+    const trailCol = new Float32Array(TRAIL_POINTS * 4);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage));
+    trailGeo.setAttribute("color", new THREE.BufferAttribute(trailCol, 4).setUsage(THREE.DynamicDrawUsage));
+    const trailMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
+    const trail = new THREE.Line(trailGeo, trailMat);
+    trail.frustumCulled = false;
+    trail.visible = showTrail;
+    scene.add(trail);
+    const trailC = new THREE.Color(NIRVASH.red);
+    for (let i = 0; i < TRAIL_POINTS; i++) {
+      trailCol[i * 4] = trailC.r;
+      trailCol[i * 4 + 1] = trailC.g;
+      trailCol[i * 4 + 2] = trailC.b;
+    }
+
+    // ── flight path (rebuilt only on resize)
+    let curve = new THREE.CatmullRomCurve3(
+      WAYPOINTS.map(() => new THREE.Vector3()),
+      false,
+      "centripetal",
+    );
+    let baseScale = 0.2;
+    const buildPath = () => {
+      const w = mount.clientWidth || window.innerWidth;
+      const h = mount.clientHeight || window.innerHeight;
+      renderer.setPixelRatio(weak ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      const dist = Math.hypot(CAM_Y, CAM_Z);
+      const halfH = Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * dist;
+      const halfW = halfH * camera.aspect;
+      curve = new THREE.CatmullRomCurve3(
+        WAYPOINTS.map(([x, y, z]) => new THREE.Vector3(x * halfW, y * halfH, z)),
+        false,
+        "centripetal",
+      );
+      baseScale = (2 * halfH * (isMobile() ? 0.13 : 0.2)) / plane.length;
+    };
+    buildPath();
+
+    // ── scratch objects (no per-frame allocation)
+    const pos = new THREE.Vector3();
+    const tan = new THREE.Vector3();
+    const tanAhead = new THREE.Vector3();
+    const f = new THREE.Vector3();
+    const fa = new THREE.Vector3();
+    const bx = new THREE.Vector3();
+    const by = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0);
+    const zAxis = new THREE.Vector3(0, 0, 1);
+    const basis = new THREE.Matrix4();
+    const qTarget = new THREE.Quaternion();
+    const qRoll = new THREE.Quaternion();
+    const qIdle = new THREE.Quaternion();
+    const eIdle = new THREE.Euler();
+    const turn = new THREE.Vector3();
+
+    const state = {
+      target: 0,
+      smooth: 0,
+      last: 0,
+      dir: 1,
+      bank: 0,
+      idle: 0,
+      speed: 0,
+      raf: 0,
+      running: false,
+      lastFrame: 0,
+    };
+
+    // ── scroll progress (ref only — no React state)
     let scrollRaf = -1;
-    const updateScroll = () => {
+    const readScroll = () => {
       const sh = document.documentElement.scrollHeight - window.innerHeight;
-      scrollRef.current = sh > 0 ? Math.max(0, Math.min(1, window.scrollY / sh)) : 0;
+      state.target = sh > 0 ? Math.max(0, Math.min(1, window.scrollY / sh)) : 0;
       scrollRaf = -1;
     };
     const onScroll = () => {
-      if (scrollRaf === -1) scrollRaf = requestAnimationFrame(updateScroll);
-    };
-    updateScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", () => { checkMobile(); onScroll(); }, { passive: true });
-
-    // Flight path
-    const wp: [number, number][] = [
-      [76, 26], [56, 16], [28, 28], [4, 43], [-8, 56],
-      [4, 67], [28, 71], [53, 57], [38, 41], [20, 49],
-    ];
-
-    const cr = (p0: number, p1: number, p2: number, p3: number, t: number) => {
-      const t2 = t * t, t3 = t2 * t;
-      return 0.5 * (2*p1 + (-p0+p2)*t + (2*p0-5*p1+4*p2-p3)*t2 + (-p0+3*p1-3*p2+p3)*t3);
+      if (scrollRaf === -1) scrollRaf = requestAnimationFrame(readScroll);
     };
 
-    const getPos = (t: number): [number, number] => {
-      const n = wp.length - 1;
-      const i = Math.min(Math.floor(t * n), n - 1);
-      const lt = t * n - i;
-      const p0 = wp[Math.max(0, i-1)], p1 = wp[i], p2 = wp[i+1], p3 = wp[Math.min(n, i+2)];
-      return [cr(p0[0],p1[0],p2[0],p3[0],lt), cr(p0[1],p1[1],p2[1],p3[1],lt)];
+    const place = (t: number, dt: number, snap: boolean) => {
+      curve.getPointAt(t, pos);
+      curve.getTangentAt(t, tan);
+      const tAhead = Math.max(0, Math.min(1, t + 0.012 * state.dir));
+      curve.getTangentAt(tAhead, tanAhead);
+
+      // travel direction: tangent, flipped when scrolling backwards
+      f.copy(tan).multiplyScalar(state.dir).normalize();
+      fa.copy(tanAhead).multiplyScalar(state.dir).normalize();
+
+      // basis: z = forward, x = up × forward, y = forward × x  (nose = +Z)
+      bx.crossVectors(up, f).normalize();
+      by.crossVectors(f, bx);
+      basis.makeBasis(bx, by, f);
+      qTarget.setFromRotationMatrix(basis);
+
+      // banking from horizontal turn rate; +0.42 rad base roll shows the top & V-section
+      turn.crossVectors(f, fa);
+      const rawBank = THREE.MathUtils.clamp(-turn.y * 14, -0.55, 0.55);
+      state.bank += (rawBank - state.bank) * Math.min(dt * 4, 1);
+      qRoll.setFromAxisAngle(zAxis, state.bank + 0.42);
+      qTarget.multiply(qRoll);
+
+      // gentle idle hover
+      const hover = Math.sin(state.idle * 1.1);
+      eIdle.set(Math.sin(state.idle * 0.9) * 0.03, 0, Math.sin(state.idle * 0.7) * 0.05);
+      qIdle.setFromEuler(eIdle);
+      qTarget.multiply(qIdle);
+
+      if (snap) root.quaternion.copy(qTarget);
+      else root.quaternion.slerp(qTarget, 1 - Math.exp(-dt * 6));
+
+      // perspective-based scale: closer to camera → naturally larger; add a touch of taper over the journey
+      const s = baseScale * (1 - t * 0.05);
+      root.scale.setScalar(s);
+      root.position.set(pos.x, pos.y + hover * 0.045, pos.z);
     };
 
-    let raf = 0;
-    let running = true;
-    let smooth = 0;
-    let smoothAngle = 0;
-    let lastSmooth = 0;
-    let lastDir = 1;
-    let idleTime = 0;
-    let lastFrame = performance.now();
-
-    const animate = (now: number) => {
-      if (!running) return;
-      const dt = Math.min((now - lastFrame) / 1000, 0.05);
-      lastFrame = now;
-
-      const el = airplaneRef.current;
-      const trail = trailRef.current;
-
-      if (el) {
-        const target = scrollRef.current;
-        smooth += (target - smooth) * Math.min(dt * 8, 1);
-        const t = Math.max(0, Math.min(1, smooth));
-        const isScrolling = Math.abs(target - smooth) > 0.003;
-
-        const [x, y] = getPos(t);
-
-        const dir = smooth > lastSmooth + 0.0002 ? 1 : smooth < lastSmooth - 0.0002 ? -1 : 0;
-        if (dir !== 0) lastDir = dir;
-        const ed = dir !== 0 ? dir : lastDir;
-        const eps = 0.004;
-        const sT = ed >= 0 ? Math.min(1, t + eps) : Math.max(0, t - eps);
-        const [xs, ys] = getPos(sT);
-        const dx = xs - x;
-        const dy = ys - y;
-
-        const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-        let diff = targetAngle - smoothAngle;
-        while (diff > 180) diff -= 360;
-        while (diff < -180) diff += 360;
-        const speed = Math.abs(diff) > 60 ? 0.4 : 0.18;
-        smoothAngle += diff * speed;
-
-        const sT2 = Math.min(1, t + eps * 2);
-        const [xs2, ys2] = getPos(sT2);
-        const cross = (xs - x) * (ys2 - ys) - (ys - y) * (xs2 - xs);
-        const bank = Math.max(-12, Math.min(12, cross * 60));
-
-        if (!isScrolling) idleTime += dt; else idleTime *= 0.9;
-        const idleY = Math.sin(idleTime * 0.8) * 0.8;
-        const idleRot = Math.sin(idleTime * 0.5) * 1;
-
-        const mobile = window.innerWidth < 768;
-        const scale = (1 - t * 0.06) * (mobile ? 0.5 : 0.72);
-        const vw = window.innerWidth / 100;
-        const vh = window.innerHeight / 100;
-        const finalAngle = smoothAngle + idleRot + bank * 0.2;
-
-        el.style.transform = `translate3d(${x * vw}px, ${(y + idleY) * vh}px, 0) rotate(${finalAngle}deg) scale(${scale})`;
-        el.style.opacity = String(Math.max(0.85, 0.95 - Math.abs(t - 0.5) * 0.05));
-
-        if (trail) {
-          const tdx = -dx * 2.5, tdy = -dy * 2.5;
-          trail.style.transform = `translate3d(${(x + tdx) * vw}px, ${(y + tdy) * vh}px, 0) rotate(${smoothAngle}deg) scale(${scale * 0.45})`;
-          trail.style.opacity = String(isScrolling ? Math.min(0.15, Math.abs(target - smooth) * 1.5) : 0);
-        }
-
-        lastSmooth = smooth;
+    const updateTrail = (strength: number) => {
+      if (!showTrail) return;
+      // newest point at index 0 (slightly behind the tail), older points shift down
+      trailPos.copyWithin(3, 0, (TRAIL_POINTS - 1) * 3);
+      trailPos[0] = root.position.x - f.x * 0.25;
+      trailPos[1] = root.position.y - f.y * 0.25;
+      trailPos[2] = root.position.z - f.z * 0.25;
+      for (let i = 0; i < TRAIL_POINTS; i++) {
+        const k = 1 - i / (TRAIL_POINTS - 1);
+        trailCol[i * 4 + 3] = k * k * 0.28 * strength;
       }
-      raf = requestAnimationFrame(animate);
+      trailGeo.attributes.position.needsUpdate = true;
+      trailGeo.attributes.color.needsUpdate = true;
     };
 
-    raf = requestAnimationFrame(animate);
+    const frame = (now: number) => {
+      if (!state.running) return;
+      const dt = Math.min((now - state.lastFrame) / 1000, 0.05);
+      state.lastFrame = now;
+
+      state.smooth += (state.target - state.smooth) * Math.min(dt * 8, 1);
+      const t = THREE.MathUtils.clamp(state.smooth, 0, 1);
+      const dv = state.smooth - state.last;
+      if (Math.abs(dv) > 0.00002) state.dir = dv > 0 ? 1 : -1;
+      state.last = state.smooth;
+
+      const gap = Math.abs(state.target - state.smooth);
+      const moving = gap > 0.003;
+      state.speed += ((moving ? 1 : 0) - state.speed) * Math.min(dt * 4, 1);
+      if (!moving) state.idle += dt;
+      else state.idle *= 0.92;
+
+      place(t, dt, false);
+      if (moving) updateTrail(Math.min(1, gap * 8 + 0.3) * state.speed);
+      else if (showTrail && state.speed > 0.01) updateTrail(state.speed);
+
+      renderer.render(scene, camera);
+      state.raf = requestAnimationFrame(frame);
+    };
+
+    const start = () => {
+      if (state.running || reduceMotion) return;
+      state.running = true;
+      state.lastFrame = performance.now();
+      state.raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      state.running = false;
+      cancelAnimationFrame(state.raf);
+    };
+
+    const onVisibility = () => (document.hidden ? stop() : start());
+    let resizeTimer = 0;
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        buildPath();
+        readScroll();
+        if (reduceMotion) renderStatic();
+      }, 120);
+    };
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      stop();
+    };
+    const onContextRestored = () => start();
+
+    // reduced motion: draw one static, well-lit frame; no loop
+    const renderStatic = () => {
+      place(0.12, 0.016, true);
+      renderer.render(scene, camera);
+    };
+
+    readScroll();
+    state.smooth = state.last = state.target;
+    if (reduceMotion) renderStatic();
+    else start();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
+    canvas.addEventListener("webglcontextlost", onContextLost);
+    canvas.addEventListener("webglcontextrestored", onContextRestored);
+
     return () => {
-      running = false;
-      cancelAnimationFrame(raf);
+      stop();
+      if (scrollRaf !== -1) cancelAnimationFrame(scrollRaf);
+      window.clearTimeout(resizeTimer);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
+      plane.dispose();
+      trailGeo.dispose();
+      trailMat.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      if (canvas.parentNode === mount) mount.removeChild(canvas);
     };
   }, []);
 
   return (
-    <>
-      <div
-        ref={trailRef}
-        className="fixed z-[4] pointer-events-none"
-        aria-hidden="true"
-        style={{ top: 0, left: 0, willChange: "transform, opacity", filter: "blur(6px)" }}
-      >
-        <PlaneSVG size={isMobile ? 28 : 42} />
-      </div>
-      <div
-        ref={airplaneRef}
-        className="fixed z-[5] pointer-events-none"
-        aria-hidden="true"
-        style={{
-          top: 0, left: 0, willChange: "transform, opacity",
-          filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(255,67,54,0.1))",
-        }}
-      >
-        <PlaneSVG size={isMobile ? 42 : 80} />
-      </div>
-    </>
-  );
-}
-
-/**
- * Premium 3D-style paper airplane SVG.
- *
- * Multiple layers create genuine depth illusion:
- * 1. Bottom wing (darkest — in shadow)
- * 2. Top wing (gradient — catches light)
- * 3. Wing edge thickness (bevel effect)
- * 4. Center spine (raised ridge with shadow)
- * 5. Specular highlight strip
- * 6. Fold crease lines
- * 7. Red accent
- * 8. Nose tip
- * 9. Tail notch
- */
-function PlaneSVG({ size }: { size: number }) {
-  const id = React.useId().replace(/:/g, "");
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        {/* Top wing gradient — light from upper-left */}
-        <linearGradient id={`gt-${id}`} x1="5%" y1="5%" x2="85%" y2="65%">
-          <stop offset="0%" stopColor="#DCDCDC" />
-          <stop offset="25%" stopColor="#F8F8F8" />
-          <stop offset="55%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E8E8E8" />
-        </linearGradient>
-        {/* Bottom wing gradient — darker, in shadow */}
-        <linearGradient id={`gb-${id}`} x1="5%" y1="95%" x2="85%" y2="35%">
-          <stop offset="0%" stopColor="#B0B0B0" />
-          <stop offset="40%" stopColor="#C8C8C8" />
-          <stop offset="100%" stopColor="#D8D8D8" />
-        </linearGradient>
-        {/* Spine ridge — dark shadow in the fold valley */}
-        <linearGradient id={`gs-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#999999" />
-          <stop offset="50%" stopColor="#AAAAAA" />
-          <stop offset="100%" stopColor="#888888" />
-        </linearGradient>
-        {/* Specular highlight — bright strip on top wing */}
-        <linearGradient id={`gh-${id}`} x1="30%" y1="20%" x2="70%" y2="50%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
-        {/* Paper texture — subtle noise */}
-        <filter id={`noise-${id}`}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.04" />
-          </feComponentTransfer>
-          <feComposite operator="over" in2="SourceGraphic" />
-        </filter>
-      </defs>
-
-      {/* ═══ Layer 1: Bottom wing (darkest) ═══ */}
-      <path
-        d="M92 50 L52 50 L8 88 Z"
-        fill={`url(#gb-${id})`}
-      />
-
-      {/* ═══ Layer 2: Wing edge thickness (bevel — gives paper volume) ═══ */}
-      <path d="M92 50 L52 50 L8 88 L10 86 L52 51 L91 49 Z" fill="#909090" opacity="0.3" />
-      <path d="M92 50 L52 50 L8 12 L10 14 L52 49 L91 51 Z" fill="#E0E0E0" opacity="0.3" />
-
-      {/* ═══ Layer 3: Top wing (lighter, catches light) ═══ */}
-      <path
-        d="M92 50 L8 12 L52 50 Z"
-        fill={`url(#gt-${id})`}
-      />
-
-      {/* ═══ Layer 4: Specular highlight on top wing ═══ */}
-      <path
-        d="M80 48 L20 18 L45 45 Z"
-        fill={`url(#gh-${id})`}
-      />
-
-      {/* ═══ Layer 5: Center spine (raised ridge shadow) ═══ */}
-      <path
-        d="M92 50 L52 50 L52 53 L92 51 Z"
-        fill={`url(#gs-${id})`}
-        opacity="0.55"
-      />
-      {/* Spine top edge — bright highlight where ridge catches light */}
-      <line x1="52" y1="50" x2="92" y2="50" stroke="#FFFFFF" strokeWidth="0.4" opacity="0.5" />
-
-      {/* ═══ Layer 6: Fold crease lines ═══ */}
-      <line x1="52" y1="50" x2="8" y2="12" stroke="#C5C5C5" strokeWidth="0.35" opacity="0.6" />
-      <line x1="52" y1="50" x2="8" y2="88" stroke="#A0A0A0" strokeWidth="0.35" opacity="0.5" />
-
-      {/* ═══ Layer 7: Tail notch (V-cut — distinguishes tail from nose) ═══ */}
-      <path d="M8 12 L17 50 L8 88 Z" fill="#1a1a1a" opacity="0.1" />
-      <path d="M8 12 L17 50 L8 88" stroke="#B0B0B0" strokeWidth="0.35" fill="none" />
-
-      {/* ═══ Layer 8: Ruby-red accent (center fold line) ═══ */}
-      <line
-        x1="17" y1="50" x2="90" y2="50"
-        stroke="#FF4336" strokeWidth="1.4" opacity="0.75" strokeLinecap="round"
-      />
-
-      {/* ═══ Layer 9: Nose tip ═══ */}
-      <circle cx="91" cy="50" r="1.3" fill="#FFFFFF" />
-      <circle cx="90" cy="50" r="0.7" fill="#FF4336" opacity="0.6" />
-
-      {/* ═══ Paper texture overlay (very subtle) ═══ */}
-      <rect x="0" y="0" width="100" height="100" filter={`url(#noise-${id})`} opacity="0.5" />
-    </svg>
+    <div
+      ref={mountRef}
+      aria-hidden="true"
+      className="fixed inset-0 z-[5] pointer-events-none"
+    />
   );
 }
