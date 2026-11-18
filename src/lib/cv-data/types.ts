@@ -119,10 +119,14 @@ export type SectionKey =
   | "publications"
   | "interests";
 
+export type TypographyChoice = "auto" | "sans" | "display" | "serif" | "mixed";
+
 export interface DesignSettings {
   templateId: string;
-  accentColor: string; // hex
-  typography: "modern" | "serif" | "minimal" | "elegant";
+  /** Hex colour override. Empty string means "use the template's own palette". */
+  accentColor: string;
+  /** "auto" means "use the template's own font pairing". */
+  typography: TypographyChoice;
   density: "compact" | "balanced" | "spacious";
   margins: "narrow" | "standard" | "wide";
   sectionOrder: SectionKey[];
@@ -196,8 +200,8 @@ export function createEmptyCV(name = "Untitled CV"): CVDocument {
     interests: [],
     design: {
       templateId: "vertex",
-      accentColor: "#FF4336",
-      typography: "modern",
+      accentColor: "",
+      typography: "auto",
       density: "balanced",
       margins: "standard",
       sectionOrder: [...DEFAULT_SECTION_ORDER],
@@ -207,10 +211,72 @@ export function createEmptyCV(name = "Untitled CV"): CVDocument {
   };
 }
 
+const TYPOGRAPHY_CHOICES: TypographyChoice[] = ["auto", "sans", "display", "serif", "mixed"];
+
+/**
+ * Repair a persisted document so every field the app relies on exists.
+ * `legacyDesign` is set for documents saved before typography was wired to the
+ * renderer: their stored value never had a visual effect, so it is reset.
+ */
+export function normalizeCV(raw: CVDocument, opts: { legacyDesign?: boolean } = {}): CVDocument {
+  const base = createEmptyCV(raw?.name);
+  const design: DesignSettings = { ...base.design, ...(raw?.design ?? {}) };
+
+  const known = new Set<SectionKey>(DEFAULT_SECTION_ORDER);
+  const order = (Array.isArray(design.sectionOrder) ? design.sectionOrder : []).filter(
+    (k, i, all) => known.has(k) && all.indexOf(k) === i
+  );
+  for (const k of DEFAULT_SECTION_ORDER) if (!order.includes(k)) order.push(k);
+  design.sectionOrder = order;
+
+  if (opts.legacyDesign || !TYPOGRAPHY_CHOICES.includes(design.typography)) design.typography = "auto";
+  if (typeof design.accentColor !== "string") design.accentColor = "";
+  // The old app stored its brand red as every document's accent, which painted
+  // every template red. Treat that value as "use the template's palette".
+  if (opts.legacyDesign && design.accentColor.toUpperCase() === "#FF4336") design.accentColor = "";
+  if (!["compact", "balanced", "spacious"].includes(design.density)) design.density = "balanced";
+  if (!["narrow", "standard", "wide"].includes(design.margins)) design.margins = "standard";
+
+  const list = <T,>(value: T[] | undefined): T[] => (Array.isArray(value) ? value : []);
+  return {
+    ...base,
+    ...raw,
+    personalInfo: {
+      ...base.personalInfo,
+      ...(raw?.personalInfo ?? {}),
+      links: list(raw?.personalInfo?.links),
+    },
+    experience: list(raw?.experience),
+    education: list(raw?.education),
+    skills: list(raw?.skills),
+    projects: list(raw?.projects),
+    certifications: list(raw?.certifications),
+    languages: list(raw?.languages),
+    awards: list(raw?.awards),
+    volunteer: list(raw?.volunteer),
+    publications: list(raw?.publications),
+    interests: list(raw?.interests),
+    design,
+  };
+}
+
+/** True once the document holds enough real content to be worth previewing. */
+export function hasMeaningfulContent(cv: CVDocument | null | undefined): boolean {
+  if (!cv || !cv.personalInfo.fullName.trim()) return false;
+  const filled = [
+    cv.summary.trim().length > 0,
+    cv.experience.length > 0,
+    cv.education.length > 0,
+    cv.skills.length > 0,
+    cv.projects.length > 0,
+  ].filter(Boolean).length;
+  return filled >= 2;
+}
+
 // Sample CV used for template previews & demo content
 // Always includes a photo — every template supports photos
 export function createSampleCV(_withPhoto = true): CVDocument {
-  const base = createEmptyCV("Frontend Developer CV");
+  const base = createEmptyCV("Product Designer CV");
   base.personalInfo = {
     fullName: "Alex Morgan",
     professionalTitle: "Senior Product Designer",
@@ -265,7 +331,7 @@ export function createSampleCV(_withPhoto = true): CVDocument {
   base.education = [
     {
       id: uid(),
-      degree: "BFA, Industrial Design",
+      degree: "BFA",
       fieldOfStudy: "Industrial Design",
       institution: "California College of the Arts",
       location: "San Francisco, CA",
@@ -299,6 +365,33 @@ export function createSampleCV(_withPhoto = true): CVDocument {
     { id: uid(), name: "English", level: "Native" },
     { id: uid(), name: "French", level: "Professional" },
   ];
+  base.interests = [
+    { id: uid(), name: "Type design" },
+    { id: uid(), name: "Trail running" },
+    { id: uid(), name: "Ceramics" },
+  ];
   base.design.templateId = "vertex";
-  return base;
+  return withStableIds(base);
+}
+
+/**
+ * Give every id in a sample document a fixed value, so previews rendered on the
+ * server and hydrated on the client produce identical markup.
+ */
+function withStableIds(cv: CVDocument): CVDocument {
+  let n = 0;
+  const visit = (v: unknown, key?: string): unknown => {
+    if (Array.isArray(v)) return v.map((x) => visit(x));
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, x] of Object.entries(v)) out[k] = visit(x, k);
+      return out;
+    }
+    if (key === "id" && typeof v === "string") return `sample-${n++}`;
+    return v;
+  };
+  const stable = visit(cv) as CVDocument;
+  stable.createdAt = 0;
+  stable.updatedAt = 0;
+  return stable;
 }

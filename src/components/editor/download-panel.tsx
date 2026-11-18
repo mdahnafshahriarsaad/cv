@@ -2,18 +2,22 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { X, FileDown, Printer, Check, Loader2 } from "lucide-react";
+import { X, FileDown, AlertTriangle, CheckCircle2, FileText } from "lucide-react";
 import { BrandButton } from "@/components/shared/brand-button";
 import { useCVStore } from "@/lib/store/cv-store";
-import { CVRenderer } from "@/components/templates/cv-renderer";
-import { cn } from "@/lib/utils";
+import { getTemplate } from "@/components/templates/registry";
+import { preflight, pdfFileName } from "@/lib/cv-data/checks";
 
-type Fmt = "pdf" | "print";
+function readPageCount(): number | null {
+  const doc = document.querySelector<HTMLElement>("#nirvash-print-source .cv-doc");
+  const n = Number(doc?.dataset.pages);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 export function DownloadPanel({ onClose }: { onClose: () => void }) {
   const cv = useCVStore((s) => s.current);
-  const [fmt, setFmt] = React.useState<Fmt>("pdf");
-  const [status, setStatus] = React.useState<"idle" | "preparing" | "done">("idle");
+  const [pages, setPages] = React.useState<number | null>(null);
+  const [opened, setOpened] = React.useState(false);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -21,19 +25,40 @@ export function DownloadPanel({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const doDownload = () => {
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setPages(readPageCount()));
+    return () => cancelAnimationFrame(id);
+  }, [cv]);
+
+  const checks = React.useMemo(() => (cv ? preflight(cv, pages) : []), [cv, pages]);
+
+  const savedTitle = React.useRef<string | null>(null);
+  React.useEffect(
+    () => () => {
+      if (savedTitle.current !== null) document.title = savedTitle.current;
+    },
+    []
+  );
+
+  const savePdf = () => {
     if (!cv) return;
-    setStatus("preparing");
-    // Use the browser's native print — @media print styles in globals.css
-    // hide everything except #nirvash-print-source and set A4 page size.
-    // The user can "Save as PDF" from the print dialog.
-    setTimeout(() => {
-      window.print();
-      setStatus("done");
-    }, 400);
+    // Chrome and Edge use the document title as the default PDF file name.
+    if (savedTitle.current === null) savedTitle.current = document.title;
+    const previous = savedTitle.current;
+    document.title = pdfFileName(cv);
+    const restore = () => {
+      document.title = previous;
+      savedTitle.current = null;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    setOpened(true);
+    window.print();
   };
 
   if (!cv) return null;
+  const template = getTemplate(cv.design.templateId);
+  const warnings = checks.filter((c) => c.level === "warn");
 
   return (
     <motion.div
@@ -44,6 +69,9 @@ export function DownloadPanel({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="download-title"
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -51,99 +79,66 @@ export function DownloadPanel({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-[14px] border border-white/10 bg-[#1f1f1f] p-6 sm:p-7"
       >
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold tracking-tight">Download Your CV</h3>
-          <button onClick={onClose} className="size-8 rounded-[8px] hover:bg-white/10 flex items-center justify-center text-white/60" aria-label="Close">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 id="download-title" className="text-lg font-bold tracking-tight">Download as PDF</h3>
+            <p className="text-[12px] text-white/45 mt-0.5 flex items-center gap-1.5">
+              <FileText className="size-3.5" />
+              {template.name} · A4 · {pages === null ? "…" : `${pages} ${pages === 1 ? "page" : "pages"}`}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="size-8 rounded-[8px] hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
+            aria-label="Close"
+          >
             <X className="size-4" />
           </button>
         </div>
 
-        {status === "done" ? (
-          <div className="text-center py-6">
-            <div className="mx-auto size-14 rounded-full bg-nirvash-red/15 border border-nirvash-red/30 flex items-center justify-center mb-4">
-              <svg viewBox="0 0 24 24" className="size-7 text-nirvash-red" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <motion.path d="M5 13l4 4L19 7" className="check-draw" />
-              </svg>
-            </div>
-            <p className="text-[16px] font-semibold text-white">Your CV is ready.</p>
-            <p className="text-[13px] text-white/50 mt-1">Choose "Save as PDF" in the print dialog to download.</p>
-            <div className="mt-5 flex gap-2 justify-center">
-              <BrandButton variant="secondary" size="md" onClick={() => setStatus("idle")}>Back</BrandButton>
-              <BrandButton variant="primary" size="md" onClick={doDownload}>Try Again</BrandButton>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2.5 mb-6">
-              <FormatOption
-                active={fmt === "pdf"}
-                onClick={() => setFmt("pdf")}
-                icon={FileDown}
-                title="PDF"
-                desc="Recommended · Best for sharing online"
-                badge="Recommended"
-              />
-              <FormatOption
-                active={fmt === "print"}
-                onClick={() => setFmt("print")}
-                icon={Printer}
-                title="Print"
-                desc="Optimized for printing"
-              />
-            </div>
-            <BrandButton variant="primary" size="lg" className="w-full" onClick={doDownload} disabled={status === "preparing"}>
-              {status === "preparing" ? (
-                <><Loader2 className="size-4 animate-spin" /> Preparing…</>
+        <ul className="space-y-2 mb-5">
+          {checks.map((c) => (
+            <li
+              key={c.text}
+              className={
+                c.level === "warn"
+                  ? "flex gap-2.5 rounded-[9px] border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2.5 text-[12.5px] text-amber-100/85"
+                  : "flex gap-2.5 rounded-[9px] border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2.5 text-[12.5px] text-emerald-100/85"
+              }
+            >
+              {c.level === "warn" ? (
+                <AlertTriangle className="size-4 shrink-0 text-amber-300/80 mt-px" />
               ) : (
-                <><FileDown className="size-4" /> Download {fmt.toUpperCase()}</>
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-300/80 mt-px" />
               )}
-            </BrandButton>
-            <p className="mt-3 text-center text-[11px] text-white/35">
-              Your browser's print dialog lets you save as PDF.
-            </p>
-          </>
-        )}
+              <span>{c.text}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="rounded-[10px] border border-white/10 bg-white/[0.02] px-4 py-3.5 mb-5">
+          <p className="text-[12px] font-semibold text-white/75 mb-2">In the print dialog that opens</p>
+          <ol className="space-y-1.5 text-[12.5px] text-white/55 list-decimal pl-4 marker:text-white/30">
+            <li>
+              Set <span className="text-white/80 font-medium">Destination</span> to{" "}
+              <span className="text-white/80 font-medium">Save as PDF</span>.
+            </li>
+            <li>
+              Leave <span className="text-white/80 font-medium">Margins</span> on Default and paper size on A4.
+            </li>
+            <li>
+              If colours are missing, turn on <span className="text-white/80 font-medium">Background graphics</span> under More settings.
+            </li>
+          </ol>
+        </div>
+
+        <BrandButton variant="primary" size="lg" className="w-full" onClick={savePdf}>
+          <FileDown className="size-4" /> {opened ? "Open print dialog again" : warnings.length ? "Download anyway" : "Download PDF"}
+        </BrandButton>
+        <p className="mt-3 text-center text-[11px] text-white/35">
+          The PDF keeps selectable text, so applicant tracking systems can read it.
+        </p>
       </motion.div>
     </motion.div>
-  );
-}
-
-function FormatOption({
-  active,
-  onClick,
-  icon: Icon,
-  title,
-  desc,
-  badge,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: any;
-  title: string;
-  desc: string;
-  badge?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 rounded-[10px] border px-4 py-3 text-left transition-all",
-        active ? "border-nirvash-red/50 bg-nirvash-red/8" : "border-white/10 bg-white/[0.02] hover:border-white/25"
-      )}
-    >
-      <span className={cn("size-9 rounded-[8px] flex items-center justify-center shrink-0", active ? "bg-nirvash-red/20 text-nirvash-red" : "bg-white/5 text-white/50")}>
-        <Icon className="size-4" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className={cn("text-[14px] font-semibold", active ? "text-white" : "text-white/80")}>{title}</p>
-          {badge && <span className="text-[9px] font-bold tracking-wide uppercase text-nirvash-red border border-nirvash-red/30 rounded-full px-1.5 py-0.5">{badge}</span>}
-        </div>
-        <p className="text-[12px] text-white/45 mt-0.5">{desc}</p>
-      </div>
-      <span className={cn("size-5 rounded-full border-2 flex items-center justify-center shrink-0", active ? "border-nirvash-red" : "border-white/20")}>
-        {active && <Check className="size-3 text-nirvash-red" />}
-      </span>
-    </button>
   );
 }

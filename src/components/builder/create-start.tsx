@@ -1,12 +1,101 @@
 "use client";
 
+import * as React from "react";
 import { Reveal } from "@/components/shared/reveal";
 import { BrandButton } from "@/components/shared/brand-button";
 import { NirvashBrand, LogoIcon } from "@/components/brand/logo";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore } from "@/lib/store/cv-store";
 import { cn } from "@/lib/utils";
-import { ArrowRight, ArrowLeft, Sparkles, FileText, MessageSquareText, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, FileText, MessageSquareText, Check, Copy, Trash2 } from "lucide-react";
+import { LazyCVPreview } from "@/components/templates/cv-preview";
+import { getTemplate } from "@/components/templates/registry";
+import type { CVDocument } from "@/lib/cv-data/types";
+
+const SHOW_FIRST = 6;
+
+function updatedLabel(ts: number): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay
+    ? `Edited today, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
+    : `Edited ${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" })}`;
+}
+
+function SavedCVCard({
+  cv,
+  onOpen,
+  onDuplicate,
+  onDelete,
+}: {
+  cv: CVDocument;
+  onOpen: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const [confirming, setConfirming] = React.useState(false);
+  const fullName = cv.personalInfo.fullName.trim();
+  const customName = cv.name.trim() && cv.name.trim() !== "Untitled CV" ? cv.name.trim() : "";
+  const title = customName || fullName || "Untitled CV";
+  const subtitle =
+    [fullName !== title ? fullName : "", cv.personalInfo.professionalTitle.trim()].filter(Boolean).join(" · ") || "No job title yet";
+  const action =
+    "inline-flex items-center gap-1 rounded-[7px] px-2 py-1 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nirvash-red/40";
+
+  return (
+    <div className="group relative flex min-w-0 gap-3.5 rounded-[12px] border border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-white/25 hover:bg-white/[0.05]">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open ${title}`}
+        className="shrink-0 overflow-hidden rounded-[4px] ring-1 ring-white/10 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nirvash-red"
+      >
+        <LazyCVPreview cv={cv} scale={0.12} />
+      </button>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <button type="button" onClick={onOpen} className="text-left focus-visible:outline-none focus-visible:underline">
+          <span className="block truncate text-[14px] font-semibold text-white">{title}</span>
+          <span className="mt-0.5 block truncate text-[12px] text-white/50">{subtitle}</span>
+        </button>
+        <p className="mt-2 text-[11.5px] text-white/40">
+          {getTemplate(cv.design.templateId).name} template
+        </p>
+        <p className="text-[11.5px] text-white/35">{updatedLabel(cv.updatedAt)}</p>
+        <div className="mt-auto flex items-center gap-1 pt-2 -ml-2">
+          {confirming ? (
+            <>
+              <span className="px-2 text-[12px] text-white/60">Delete this CV?</span>
+              <button type="button" onClick={onDelete} className={cn(action, "text-nirvash-red hover:bg-nirvash-red/10")}>
+                Delete
+              </button>
+              <button type="button" onClick={() => setConfirming(false)} className={cn(action, "text-white/55 hover:bg-white/[0.06] hover:text-white")}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={onOpen} className={cn(action, "text-white/75 hover:bg-white/[0.06] hover:text-white")}>
+                Open <ArrowRight className="size-3" />
+              </button>
+              <button type="button" onClick={onDuplicate} className={cn(action, "text-white/50 hover:bg-white/[0.06] hover:text-white")}>
+                <Copy className="size-3" /> Duplicate
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                aria-label={`Delete ${title}`}
+                className={cn(action, "text-white/50 hover:bg-nirvash-red/10 hover:text-nirvash-red")}
+              >
+                <Trash2 className="size-3" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function CreateStartPage() {
   const setView = useAppStore((s) => s.setView);
@@ -14,6 +103,11 @@ export function CreateStartPage() {
   const newCV = useCVStore((s) => s.newCV);
   const docs = useCVStore((s) => s.docs);
   const loadCV = useCVStore((s) => s.loadCV);
+  const duplicateCV = useCVStore((s) => s.duplicateCV);
+  const deleteCV = useCVStore((s) => s.deleteCV);
+  const [showAll, setShowAll] = React.useState(false);
+  const sorted = React.useMemo(() => docs.slice().sort((a, b) => b.updatedAt - a.updatedAt), [docs]);
+  const visible = showAll ? sorted : sorted.slice(0, SHOW_FIRST);
 
   const goHome = () => {
     setView("landing");
@@ -41,7 +135,7 @@ export function CreateStartPage() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#212121] text-white flex flex-col">
+    <div className="relative min-h-[100dvh] overflow-x-clip bg-[#212121] text-white flex flex-col">
       <div className="absolute inset-0 red-ambient opacity-70" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-nirvash-red/8 blur-3xl" />
 
@@ -63,7 +157,7 @@ export function CreateStartPage() {
         <div className="w-full max-w-5xl">
           <Reveal className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/60 uppercase">
-              Create Your CV
+              Create your CV
             </span>
             <h1 className="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05] max-w-2xl mx-auto">
               How would you like to create your CV?
@@ -95,7 +189,7 @@ export function CreateStartPage() {
                     </span>
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                        Guide Me
+                        Guide me
                       </h2>
                       <p className="mt-2 text-sm text-white/55 leading-relaxed">
                         Answer simple questions step by step. We'll guide you
@@ -120,7 +214,7 @@ export function CreateStartPage() {
 
                   <div className="mt-8">
                     <BrandButton variant="primary" size="lg" className="w-full sm:w-auto">
-                      Start Guided <ArrowRight className="size-4" />
+                      Start guided <ArrowRight className="size-4" />
                     </BrandButton>
                   </div>
                 </div>
@@ -147,7 +241,7 @@ export function CreateStartPage() {
                     </span>
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                        I'll Fill It Myself
+                        I'll fill it myself
                       </h2>
                       <p className="mt-2 text-sm text-[#6b6b6b] leading-relaxed">
                         Prefer full control? Fill out your information directly
@@ -169,7 +263,7 @@ export function CreateStartPage() {
 
                   <div className="mt-8">
                     <BrandButton variant="light" size="lg" className="w-full sm:w-auto">
-                      Open CV Form <ArrowRight className="size-4" />
+                      Open the CV form <ArrowRight className="size-4" />
                     </BrandButton>
                   </div>
                 </div>
@@ -180,11 +274,11 @@ export function CreateStartPage() {
           {/* Saved CVs / empty state */}
           <Reveal delay={0.15} className="mt-14">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold tracking-[0.16em] text-white/45 uppercase">
-                {docs.length > 0 ? "Continue Working" : "Your CVs"}
+              <h2 className="text-[15px] font-semibold text-white/80">
+                {docs.length > 0 ? "Continue working" : "Your CVs"}
               </h2>
               {docs.length > 0 && (
-                <span className="text-[12px] text-white/35">{docs.length} saved</span>
+                <span className="text-[12px] text-white/40">{docs.length} saved on this device</span>
               )}
             </div>
 
@@ -197,34 +291,27 @@ export function CreateStartPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {docs
-                  .slice()
-                  .sort((a, b) => b.updatedAt - a.updatedAt)
-                  .slice(0, 6)
-                  .map((d) => (
-                    <button
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {visible.map((d) => (
+                    <SavedCVCard
                       key={d.id}
-                      onClick={() => openCV(d.id)}
-                      className="group text-left rounded-[12px] border border-white/10 bg-white/[0.03] hover:border-nirvash-red/40 hover:bg-white/[0.05] transition-all p-4"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[14px] font-semibold text-white truncate">{d.name || "Untitled CV"}</p>
-                          <p className="text-[12px] text-white/45 truncate mt-0.5">
-                            {d.personalInfo.professionalTitle || d.personalInfo.fullName || "No details yet"}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-bold text-nirvash-red bg-nirvash-red/10 border border-nirvash-red/25 rounded px-1.5 py-0.5 uppercase shrink-0">
-                          {d.design.templateId}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-white/35 mt-3">
-                        Updated {new Date(d.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </p>
-                    </button>
+                      cv={d}
+                      onOpen={() => openCV(d.id)}
+                      onDuplicate={() => duplicateCV(d.id)}
+                      onDelete={() => deleteCV(d.id)}
+                    />
                   ))}
-              </div>
+                </div>
+                {sorted.length > SHOW_FIRST && (
+                  <button
+                    onClick={() => setShowAll((s) => !s)}
+                    className="mt-4 text-[13px] font-medium text-white/55 hover:text-white transition-colors"
+                  >
+                    {showAll ? "Show fewer" : `Show all ${sorted.length} CVs`}
+                  </button>
+                )}
+              </>
             )}
           </Reveal>
 

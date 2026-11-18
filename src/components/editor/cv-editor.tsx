@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Eye, Download, Edit3, Palette, LayoutPanelTop } from "lucide-react";
+import { ArrowLeft, Eye, Download, Edit3, Palette, LayoutPanelTop } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
 import { PreviewWorkspace } from "@/components/editor/preview-workspace";
@@ -13,8 +13,8 @@ import { ContentPanel } from "@/components/editor/content-panel";
 import { DesignPanel } from "@/components/editor/design-panel";
 import { LayoutPanel } from "@/components/editor/layout-panel";
 import { DownloadPanel } from "@/components/editor/download-panel";
-import { TemplateChangeModal } from "@/components/editor/template-change-modal";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { SaveIndicator } from "@/components/editor/save-indicator";
+import { CVPrintSource } from "@/components/templates/cv-renderer";
 
 type Tab = "content" | "design" | "layout";
 type MobileTab = "edit" | "preview" | "design";
@@ -23,14 +23,12 @@ export function CVEditor() {
   const [tab, setTab] = React.useState<Tab>("content");
   const [mobileTab, setMobileTab] = React.useState<MobileTab>("edit");
   const [showDownload, setShowDownload] = React.useState(false);
-  const [showTemplateChange, setShowTemplateChange] = React.useState(false);
   const [highlightSection, setHighlightSection] = React.useState<string | null>(null);
   const [switching, setSwitching] = React.useState(false);
   const setView = useAppStore((s) => s.setView);
   const setTemplatesOrigin = useAppStore((s) => s.setTemplatesOrigin);
   const cv = useCVStore((s) => s.current);
   const renameCV = useCVStore((s) => s.renameCV);
-  const saveStatus = useCVStore((s) => s.saveStatus);
   const setSaveStatus = useCVStore((s) => s.setSaveStatus);
 
   // debounced autosave on cv changes
@@ -42,8 +40,7 @@ export function CVEditor() {
     }
     setSaveStatus("saving");
     const t = setTimeout(() => {
-      persistCurrent();
-      setSaveStatus("saved");
+      setSaveStatus(persistCurrent() ? "saved" : "error");
     }, 800);
     return () => clearTimeout(t);
   }, [cv, setSaveStatus]);
@@ -62,8 +59,14 @@ export function CVEditor() {
 
   if (!cv) {
     return (
-      <div className="min-h-[100dvh] bg-[#212121] text-white flex items-center justify-center">
-        <p className="text-white/50">No CV loaded.</p>
+      <div className="min-h-[100dvh] bg-[#212121] text-white flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <div>
+          <p className="text-lg font-semibold">No CV is open.</p>
+          <p className="mt-1.5 text-[14px] text-white/50">Start a new CV or pick one you saved earlier.</p>
+        </div>
+        <BrandButton variant="primary" size="md" onClick={() => setView("create-start")}>
+          <ArrowLeft className="size-4" /> Go to my CVs
+        </BrandButton>
       </div>
     );
   }
@@ -101,16 +104,12 @@ export function CVEditor() {
             <input
               value={cv.name}
               onChange={(e) => renameCV(e.target.value)}
-              className="text-[15px] font-semibold text-white text-center bg-transparent border-none outline-none focus:bg-white/5 rounded px-2 py-0.5 max-w-[280px] truncate"
+              onBlur={(e) => !e.target.value.trim() && renameCV("Untitled CV")}
+              placeholder="Name this CV"
+              className="w-full max-w-[280px] text-[15px] font-semibold text-white text-center bg-transparent border border-transparent outline-none hover:border-white/10 focus:border-white/20 focus:bg-white/5 rounded-md px-2 py-0.5 truncate transition-colors"
               aria-label="CV name"
             />
-            <span className="text-[11px] text-white/40 flex items-center gap-1">
-              {saveStatus === "saving" ? (
-                <><span className="size-1.5 rounded-full bg-white/40 animate-pulse" /> Saving…</>
-              ) : (
-                <><Check className="size-3 text-nirvash-red" /> Saved just now</>
-              )}
-            </span>
+            <SaveIndicator className="text-[11px]" />
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -152,7 +151,7 @@ export function CVEditor() {
           </div>
           <div className="flex-1 overflow-y-auto">
             {tab === "content" && <ContentPanel onActiveSection={setHighlightSection} />}
-            {tab === "design" && <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />}
+            {tab === "design" && <DesignPanel onChangeTemplate={changeTemplate} />}
             {tab === "layout" && <LayoutPanel />}
           </div>
         </div>
@@ -193,7 +192,9 @@ export function CVEditor() {
           )}
           {mobileTab === "design" && (
             <div className="h-full overflow-y-auto">
-              <DesignPanel onChangeTemplate={changeTemplate} onBrowse={changeTemplate} />
+              <DesignPanel onChangeTemplate={changeTemplate} />
+              <div className="mx-4 border-t border-white/8" />
+              <LayoutPanel />
             </div>
           )}
           {mobileTab === "preview" && (
@@ -207,21 +208,8 @@ export function CVEditor() {
         {showDownload && <DownloadPanel onClose={() => setShowDownload(false)} />}
       </AnimatePresence>
 
-      {/* Template change modal */}
-      <AnimatePresence>
-        {showTemplateChange && (
-          <TemplateChangeModal onClose={() => setShowTemplateChange(false)} />
-        )}
-      </AnimatePresence>
-
-      {/* Hidden print source for PDF export — real A4, unaffected by preview zoom */}
-      <div
-        id="nirvash-print-source"
-        aria-hidden="true"
-        style={{ position: "fixed", left: "-99999px", top: 0, pointerEvents: "none" }}
-      >
-        <CVRenderer cv={cv} width={794} showShadow={false} />
-      </div>
+      {/* Off-screen full-size pages: this is what Download and Ctrl/Cmd+P print */}
+      <CVPrintSource cv={cv} />
     </div>
   );
 }

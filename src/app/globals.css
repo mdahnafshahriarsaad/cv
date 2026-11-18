@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../components/templates/cv-document.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -396,40 +397,11 @@
   }
 }
 
-/* ===== PRINT STYLES — for CV PDF download ===== */
+/* ===== PRINT — the CV pages themselves are styled in cv-document.css ===== */
 @media print {
-  /* Hide everything */
-  body * {
-    visibility: hidden !important;
-  }
-  /* Show only the print source and its children */
-  #nirvash-print-source,
-  #nirvash-print-source * {
-    visibility: visible !important;
-  }
-  /* Reset print source position from off-screen to top-left */
-  #nirvash-print-source {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important;
-    min-height: auto !important;
-    pointer-events: auto !important;
-    z-index: 99999 !important;
-    overflow: visible !important;
-  }
-  /* Force backgrounds to print (sidebar colors, accent lines) */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  /* A4 page with zero margins */
+  /* One A4 sheet per CV page, no browser margins: each page carries its own. */
   @page {
     size: A4;
     margin: 0;
-  }
-  /* Prevent page breaks inside CV sections */
-  #nirvash-print-source {
-    break-inside: avoid;
   }
 }

@@ -3,13 +3,14 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Check, Download, Printer, Palette, FileText,
+  ArrowLeft, Download, Printer, Palette, FileText,
 } from "lucide-react";
 import { NirvashBrand } from "@/components/brand/logo";
 import { BrandButton } from "@/components/shared/brand-button";
 import { PreviewWorkspace } from "@/components/editor/preview-workspace";
 import { DownloadPanel } from "@/components/editor/download-panel";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { SaveIndicator } from "@/components/editor/save-indicator";
+import { CVPrintSource } from "@/components/templates/cv-renderer";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore, persistCurrent } from "@/lib/store/cv-store";
 import { AnimatePresence } from "framer-motion";
@@ -18,7 +19,6 @@ export function PreviewPage() {
   const setView = useAppStore((s) => s.setView);
   const setTemplatesOrigin = useAppStore((s) => s.setTemplatesOrigin);
   const cv = useCVStore((s) => s.current);
-  const saveStatus = useCVStore((s) => s.saveStatus);
   const [showDownload, setShowDownload] = React.useState(false);
 
   // persist on entering preview
@@ -28,8 +28,11 @@ export function PreviewPage() {
 
   if (!cv) {
     return (
-      <div className="min-h-[100dvh] bg-[#212121] text-white flex items-center justify-center">
-        <p className="text-white/50">No CV loaded.</p>
+      <div className="min-h-[100dvh] bg-[#212121] text-white flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <p className="text-lg font-semibold">No CV is open.</p>
+        <BrandButton variant="primary" size="md" onClick={() => setView("create-start")}>
+          <ArrowLeft className="size-4" /> Go to my CVs
+        </BrandButton>
       </div>
     );
   }
@@ -67,13 +70,7 @@ export function PreviewPage() {
             <div className="hidden md:block h-5 w-px bg-white/10" />
             <div className="hidden md:flex items-center gap-2 min-w-0">
               <span className="text-[14px] font-semibold text-white truncate max-w-[200px]">{cv.name}</span>
-              <span className="text-[11px] text-white/40 flex items-center gap-1 shrink-0">
-                {saveStatus === "saving" ? (
-                  <><span className="size-1.5 rounded-full bg-white/40 animate-pulse" /> Saving…</>
-                ) : (
-                  <><Check className="size-3 text-nirvash-red" /> Autosaved</>
-                )}
-              </span>
+              <SaveIndicator className="text-[11px] shrink-0" compact />
             </div>
           </div>
 
@@ -141,14 +138,8 @@ export function PreviewPage() {
         {showDownload && <DownloadPanel onClose={() => setShowDownload(false)} />}
       </AnimatePresence>
 
-      {/* Hidden print source — real A4 dimensions for PDF/print */}
-      <div
-        id="nirvash-print-source"
-        aria-hidden="true"
-        style={{ position: "fixed", left: "-99999px", top: 0, pointerEvents: "none" }}
-      >
-        <CVRenderer cv={cv} width={794} showShadow={false} />
-      </div>
+      {/* Off-screen full-size pages: this is what Download and Print output */}
+      <CVPrintSource cv={cv} />
     </div>
   );
 }

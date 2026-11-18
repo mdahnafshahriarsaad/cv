@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Field, DarkInput, MonthInput } from "@/components/shared/form-primitives";
+import { Field, DarkInput } from "@/components/shared/form-primitives";
 import { PhotoControl, PhotoUploadModal } from "@/components/shared/photo-upload";
 import { useCVStore } from "@/lib/store/cv-store";
-import { StepHeader } from "@/components/builder/guided-builder";
-import { Plus, Trash2, ChevronDown, ChevronUp, Linkedin, Github, Globe, FolderOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { StepHeader, useGuidedNav } from "@/components/builder/guided-builder";
+import { personalErrors } from "@/lib/cv-data/checks";
+import { Plus, Trash2, ChevronUp, Linkedin, Github, Globe, FolderOpen } from "lucide-react";
 
 export function StepPersonal() {
   const cv = useCVStore((s) => s.current);
@@ -14,11 +14,16 @@ export function StepPersonal() {
   const addLink = useCVStore((s) => s.addLink);
   const updateLink = useCVStore((s) => s.updateLink);
   const removeLink = useCVStore((s) => s.removeLink);
-  const [showLinks, setShowLinks] = React.useState(false);
+  const { showErrors } = useGuidedNav();
+  const [touched, setTouched] = React.useState<{ fullName?: boolean; email?: boolean }>({});
+  const [showLinks, setShowLinks] = React.useState(() => (cv?.personalInfo.links.length ?? 0) > 0);
   const [showPhoto, setShowPhoto] = React.useState(false);
 
   if (!cv) return null;
   const p = cv.personalInfo;
+  const errors = personalErrors(p);
+  const nameError = showErrors || touched.fullName ? errors.fullName : undefined;
+  const emailError = showErrors || touched.email ? errors.email : undefined;
 
   return (
     <div>
@@ -33,37 +38,46 @@ export function StepPersonal() {
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Full Name" htmlFor="fullName" required className="sm:col-span-2">
+        <Field label="Full name" htmlFor="fullName" required className="sm:col-span-2" error={nameError}>
           <DarkInput
             id="fullName"
             value={p.fullName}
             onChange={(e) => updatePersonal({ fullName: e.target.value })}
-            placeholder="e.g. Alex Johnson"
+            onBlur={() => setTouched((t) => ({ ...t, fullName: true }))}
+            aria-invalid={!!nameError}
+            autoComplete="name"
+            placeholder="e.g. Nusrat Jahan"
           />
         </Field>
-        <Field label="Professional Title" htmlFor="title" className="sm:col-span-2">
+        <Field label="Professional title" htmlFor="title" className="sm:col-span-2">
           <DarkInput
             id="title"
             value={p.professionalTitle}
             onChange={(e) => updatePersonal({ professionalTitle: e.target.value })}
+            autoComplete="organization-title"
             placeholder="e.g. Frontend Developer"
           />
         </Field>
-        <Field label="Email Address" htmlFor="email" required>
+        <Field label="Email address" htmlFor="email" error={emailError} hint="Employers need an email or a phone number.">
           <DarkInput
             id="email"
             type="email"
             value={p.email}
             onChange={(e) => updatePersonal({ email: e.target.value })}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            aria-invalid={!!emailError}
+            autoComplete="email"
             placeholder="you@email.com"
           />
         </Field>
-        <Field label="Phone Number" htmlFor="phone">
+        <Field label="Phone number" htmlFor="phone">
           <DarkInput
             id="phone"
+            type="tel"
             value={p.phone}
             onChange={(e) => updatePersonal({ phone: e.target.value })}
-            placeholder="+1 (555) 000-0000"
+            autoComplete="tel"
+            placeholder="+880 1712 345678"
           />
         </Field>
         <Field label="Location" htmlFor="location" className="sm:col-span-2">
@@ -108,6 +122,7 @@ export function StepPersonal() {
                   </span>
                 </div>
                 <select
+                  aria-label="Link type"
                   value={link.type}
                   onChange={(e) => updateLink(link.id, { type: e.target.value as any })}
                   className="h-11 rounded-[10px] bg-white/[0.04] border border-white/12 text-white text-[13px] px-2 [color-scheme:dark] focus-visible:border-nirvash-red outline-none"

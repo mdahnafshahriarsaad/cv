@@ -1,96 +1,110 @@
 "use client";
 
 import { useCVStore } from "@/lib/store/cv-store";
-import { StepHeader } from "@/components/builder/guided-builder";
-import { BrandButton } from "@/components/shared/brand-button";
-import { Check, Circle, Pencil } from "lucide-react";
+import { StepHeader, useGuidedNav } from "@/components/builder/guided-builder";
+import { Check, Circle, Pencil, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store/app-store";
-import { formatMonth } from "@/components/templates/cv-renderer";
+import { preflight } from "@/lib/cv-data/checks";
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s);
 
 export function StepReview() {
   const cv = useCVStore((s) => s.current);
-  const setView = useAppStore((s) => s.setView);
-  const setTemplatesOrigin = useAppStore((s) => s.setTemplatesOrigin);
+  const { goTo } = useGuidedNav();
   if (!cv) return null;
+
+  const p = cv.personalInfo;
+  const additionalCount =
+    cv.certifications.length + cv.languages.length + cv.awards.length + cv.volunteer.length + cv.publications.length + cv.interests.length;
 
   const sections = [
     {
-      key: "personal",
-      label: "Personal Information",
-      filled: !!cv.personalInfo.fullName,
-      detail: [cv.personalInfo.fullName, cv.personalInfo.professionalTitle, cv.personalInfo.email].filter(Boolean).join(" · "),
+      step: 0,
+      label: "Personal information",
+      filled: !!p.fullName.trim(),
+      detail: [p.fullName, p.professionalTitle, p.email || p.phone].filter(Boolean).join(" · ") || "Not added",
     },
     {
-      key: "summary",
-      label: "Professional Summary",
-      filled: !!cv.summary,
-      detail: cv.summary ? cv.summary.slice(0, 120) + (cv.summary.length > 120 ? "…" : "") : "Not added",
+      step: 1,
+      label: "Professional summary",
+      filled: !!cv.summary.trim(),
+      detail: cv.summary.trim() ? clip(cv.summary.trim(), 120) : "Not added",
     },
     {
-      key: "experience",
+      step: 2,
       label: "Experience",
       filled: cv.experience.length > 0,
       detail: cv.experience.length
-        ? `${cv.experience.length} ${cv.experience.length === 1 ? "role" : "roles"} · ${cv.experience[0]?.jobTitle || ""}`
+        ? [plural(cv.experience.length, "role", "roles"), cv.experience[0]?.jobTitle].filter(Boolean).join(" · ")
         : "No experience added",
     },
     {
-      key: "education",
+      step: 3,
       label: "Education",
       filled: cv.education.length > 0,
       detail: cv.education.length
-        ? `${cv.education.length} ${cv.education.length === 1 ? "entry" : "entries"} · ${cv.education[0]?.degree || ""}`
+        ? [plural(cv.education.length, "entry", "entries"), cv.education[0]?.degree].filter(Boolean).join(" · ")
         : "No education added",
     },
     {
-      key: "skills",
+      step: 4,
       label: "Skills",
       filled: cv.skills.length > 0,
-      detail: cv.skills.length ? `${cv.skills.length} skills` : "No skills added",
+      detail: cv.skills.length ? clip(cv.skills.map((s) => s.name).filter(Boolean).join(", "), 120) : "No skills added",
     },
     {
-      key: "projects",
+      step: 5,
       label: "Projects",
-      filled: cv.projects.length > 0,
-      detail: cv.projects.length ? `${cv.projects.length} ${cv.projects.length === 1 ? "project" : "projects"}` : "Optional — skipped",
       optional: true,
+      filled: cv.projects.length > 0,
+      detail: cv.projects.length ? plural(cv.projects.length, "project", "projects") : "Skipped",
     },
     {
-      key: "additional",
-      label: "Additional Information",
-      filled:
-        cv.certifications.length + cv.languages.length + cv.awards.length + cv.volunteer.length + cv.publications.length + cv.interests.length > 0,
+      step: 6,
+      label: "Additional information",
+      optional: true,
+      filled: additionalCount > 0,
       detail:
         [
-          cv.certifications.length && `${cv.certifications.length} certifications`,
-          cv.languages.length && `${cv.languages.length} languages`,
-          cv.awards.length && `${cv.awards.length} awards`,
-          cv.interests.length && `${cv.interests.length} interests`,
+          cv.certifications.length && plural(cv.certifications.length, "certification", "certifications"),
+          cv.languages.length && plural(cv.languages.length, "language", "languages"),
+          cv.awards.length && plural(cv.awards.length, "award", "awards"),
+          cv.volunteer.length && plural(cv.volunteer.length, "volunteer role", "volunteer roles"),
+          cv.publications.length && plural(cv.publications.length, "publication", "publications"),
+          cv.interests.length && plural(cv.interests.length, "interest", "interests"),
         ]
           .filter(Boolean)
-          .join(" · ") || "Optional — skipped",
-      optional: true,
+          .join(" · ") || "Skipped",
     },
   ];
 
-  const goToTemplates = () => {
-    setTemplatesOrigin("flow");
-    setView("templates");
-    window.scrollTo({ top: 0 });
-  };
+  const warnings = preflight(cv, null).filter((c) => c.level === "warn");
 
   return (
     <div>
       <StepHeader
         title="Your information is ready."
-        subtitle="Take a look at everything you've added. You can edit any section, or continue to pick a template."
+        subtitle="Check what you've added. Edit any section, or continue to pick a template."
       />
+
+      {warnings.length > 0 && (
+        <div className="mb-5 rounded-[12px] border border-amber-400/25 bg-amber-400/[0.06] px-5 py-4">
+          <p className="flex items-center gap-2 text-[13.5px] font-semibold text-amber-200">
+            <AlertTriangle className="size-4" /> Worth fixing before you download
+          </p>
+          <ul className="mt-2 space-y-1 pl-6 text-[13px] text-white/65 list-disc marker:text-amber-300/60">
+            {warnings.map((w) => (
+              <li key={w.text}>{w.text}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="space-y-2.5">
         {sections.map((s) => (
           <div
-            key={s.key}
+            key={s.step}
             className={cn(
               "rounded-[12px] border bg-white/[0.02] px-5 py-4 flex items-center gap-4",
               s.filled ? "border-white/12" : "border-dashed border-white/10"
@@ -107,31 +121,25 @@ export function StepReview() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="text-[14px] font-semibold text-white">{s.label}</p>
-                {s.optional && <span className="text-[10px] font-semibold text-white/35 uppercase tracking-wide">Optional</span>}
+                {s.optional && <span className="text-[11px] font-medium text-white/35">Optional</span>}
               </div>
               <p className="text-[12.5px] text-white/50 mt-0.5 truncate">{s.detail}</p>
             </div>
             <button
-              onClick={() => {
-                // For guided builder, edit jumps to form builder section
-                setView("form-builder");
-                window.scrollTo({ top: 0 });
-              }}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/60 hover:text-nirvash-red transition-colors shrink-0"
+              type="button"
+              onClick={() => goTo(s.step)}
+              aria-label={`Edit ${s.label.toLowerCase()}`}
+              className="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12px] font-medium text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors shrink-0"
             >
-              <Pencil className="size-3.5" /> Edit
+              <Pencil className="size-3.5" /> {s.filled ? "Edit" : "Add"}
             </button>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 rounded-[12px] border border-nirvash-red/25 bg-nirvash-red/8 px-6 py-6 text-center">
-        <p className="text-[15px] font-semibold text-white">Everything looks good?</p>
-        <p className="text-[13px] text-white/55 mt-1">Pick a template and your CV comes to life.</p>
-        <BrandButton variant="primary" size="lg" className="mt-5" onClick={goToTemplates}>
-          Choose Your Template →
-        </BrandButton>
-      </div>
+      <p className="mt-6 text-[13px] text-white/45">
+        Next you'll pick a template. You can change the template, colours and section order at any time in the editor.
+      </p>
     </div>
   );
 }

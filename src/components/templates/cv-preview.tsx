@@ -1,23 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { CVRenderer } from "@/components/templates/cv-renderer";
+import { CVRenderer, PAGE_H, PAGE_W } from "@/components/templates/cv-renderer";
 import { CVDocument } from "@/lib/cv-data/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Correctly-scaled miniature A4 CV preview.
+ * Correctly-scaled miniature of the first A4 page of a CV.
  *
- * The trick: render the full-size CV (794px wide) inside a wrapper that is
- * exactly `width * scale` × `height * scale`, with the inner content scaled
- * from `top left`. This avoids the clipping / centering issues that arise
- * when you scale a flex-centered element.
- *
- * A4 ratio = 210:297 ≈ 1:1.414
+ * The page is rendered at full size (794px wide) inside a wrapper that is
+ * exactly `width * scale` × `height * scale`, with the page scaled from its
+ * top-left corner, so nothing is clipped or mis-centred.
  */
 
-const A4_W = 794;
-const A4_H = Math.round(A4_W * 1.414); // 1123
+const A4_W = PAGE_W;
+const A4_H = PAGE_H;
 
 export function CVPreview({
   cv,
@@ -36,15 +33,18 @@ export function CVPreview({
     <div
       className={cn("relative overflow-hidden", className)}
       style={{ width: w, height: h }}
+      aria-hidden="true"
+      inert
     >
       <div
         style={{
           width: A4_W,
+          height: A4_H,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
         }}
       >
-        <CVRenderer cv={cv} width={A4_W} showShadow={showShadow} />
+        <CVRenderer cv={cv} showShadow={showShadow} />
       </div>
     </div>
   );

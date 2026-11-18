@@ -16,6 +16,7 @@ import { StepEducation } from "@/components/builder/steps/step-education";
 import { StepSkills } from "@/components/builder/steps/step-skills";
 import { StepProjects } from "@/components/builder/steps/step-projects";
 import { SectionForm } from "@/components/builder/steps/step-additional";
+import { BuilderLivePreview } from "@/components/builder/builder-live-preview";
 
 type SectionId =
   | "personal"
@@ -165,7 +166,7 @@ export function FormBuilder() {
         </aside>
 
         {/* Main form area */}
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <main className="flex-1 min-w-0">
           {/* mobile section switcher */}
           <div className="md:hidden border-b border-white/8 px-4 py-3 flex gap-1.5 overflow-x-auto">
             {NAV.map((n) => (
@@ -184,7 +185,8 @@ export function FormBuilder() {
             ))}
           </div>
 
-          <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10 sm:py-14">
+          <div className="mx-auto max-w-2xl xl:max-w-[1100px] px-4 sm:px-6 py-10 sm:py-14 xl:flex xl:gap-12">
+            <div className="flex-1 min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={active}
@@ -234,14 +236,16 @@ export function FormBuilder() {
               </BrandButton>
               {activeIndex < NAV.length - 1 ? (
                 <BrandButton variant="secondary" size="md" onClick={() => setActive(NAV[activeIndex + 1].id)}>
-                  Next Section <ArrowRight className="size-4" />
+                  Next section <ArrowRight className="size-4" />
                 </BrandButton>
               ) : (
                 <BrandButton variant="primary" size="md" onClick={goToTemplates}>
-                  Choose Template <ArrowRight className="size-4" />
+                  Choose template <ArrowRight className="size-4" />
                 </BrandButton>
               )}
             </div>
+            </div>
+            <BuilderLivePreview scale={0.4} />
           </div>
         </main>
       </div>

@@ -8,6 +8,7 @@ import { BrandButton } from "@/components/shared/brand-button";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCVStore, persistCurrent } from "@/lib/store/cv-store";
 import { cn } from "@/lib/utils";
+import { personalErrors } from "@/lib/cv-data/checks";
 
 import { StepPersonal } from "@/components/builder/steps/step-personal";
 import { StepSummary } from "@/components/builder/steps/step-summary";
@@ -17,6 +18,7 @@ import { StepSkills } from "@/components/builder/steps/step-skills";
 import { StepProjects } from "@/components/builder/steps/step-projects";
 import { StepAdditional } from "@/components/builder/steps/step-additional";
 import { StepReview } from "@/components/builder/steps/step-review";
+import { BuilderLivePreview } from "@/components/builder/builder-live-preview";
 
 const TOTAL_STEPS = 8;
 const STEP_LABELS = [
@@ -30,12 +32,18 @@ const STEP_LABELS = [
   "Review",
 ];
 
+type GuidedNav = { goTo: (step: number) => void; showErrors: boolean };
+const GuidedNavContext = React.createContext<GuidedNav>({ goTo: () => {}, showErrors: false });
+export const useGuidedNav = () => React.useContext(GuidedNavContext);
+
 export function GuidedBuilder() {
   const [step, setStep] = React.useState(0);
+  const [showErrors, setShowErrors] = React.useState(false);
   const setView = useAppStore((s) => s.setView);
   const setTemplatesOrigin = useAppStore((s) => s.setTemplatesOrigin);
   const saveStatus = useCVStore((s) => s.saveStatus);
   const setSaveStatus = useCVStore((s) => s.setSaveStatus);
+  const personal = useCVStore((s) => s.current?.personalInfo);
 
   // autosave on step change
   React.useEffect(() => {
@@ -53,26 +61,33 @@ export function GuidedBuilder() {
     window.scrollTo({ top: 0 });
   };
 
+  const goTo = React.useCallback((target: number) => {
+    setStep(Math.max(0, Math.min(TOTAL_STEPS - 1, target)));
+    window.scrollTo({ top: 0 });
+  }, []);
+
   const back = () => {
-    if (step === 0) {
-      exit();
-    } else {
-      setStep((s) => s - 1);
-      window.scrollTo({ top: 0 });
-    }
+    if (step === 0) exit();
+    else goTo(step - 1);
   };
 
   const next = () => {
+    if (step === 0 && personal && Object.keys(personalErrors(personal)).length > 0) {
+      setShowErrors(true);
+      document.getElementById("fullName")?.focus();
+      return;
+    }
     if (step === TOTAL_STEPS - 1) {
       persistCurrent();
       setTemplatesOrigin("flow");
       setView("templates");
       window.scrollTo({ top: 0 });
     } else {
-      setStep((s) => s + 1);
-      window.scrollTo({ top: 0 });
+      goTo(step + 1);
     }
   };
+
+  const nav = React.useMemo(() => ({ goTo, showErrors }), [goTo, showErrors]);
 
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
@@ -83,7 +98,7 @@ export function GuidedBuilder() {
 
       {/* Header */}
       <header className="relative z-10 border-b border-white/5 bg-[#212121]/80 backdrop-blur-md sticky top-0">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="mx-auto max-w-3xl xl:max-w-[1140px] px-4 sm:px-6 h-16 flex items-center justify-between">
           <button
             onClick={exit}
             className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-sm font-medium"
@@ -125,7 +140,8 @@ export function GuidedBuilder() {
       </header>
 
       {/* Step content */}
-      <main className="relative z-10 flex-1 mx-auto w-full max-w-3xl px-4 sm:px-6 py-10 sm:py-14 pb-28">
+      <main className="relative z-10 flex-1 mx-auto w-full max-w-3xl xl:max-w-[1140px] px-4 sm:px-6 py-10 sm:py-14 pb-28 xl:flex xl:gap-12">
+        <div className="flex-1 min-w-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -134,26 +150,30 @@ export function GuidedBuilder() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
-            {step === 0 && <StepPersonal />}
-            {step === 1 && <StepSummary />}
-            {step === 2 && <StepExperience />}
-            {step === 3 && <StepEducation />}
-            {step === 4 && <StepSkills />}
-            {step === 5 && <StepProjects />}
-            {step === 6 && <StepAdditional />}
-            {step === 7 && <StepReview />}
+            <GuidedNavContext.Provider value={nav}>
+              {step === 0 && <StepPersonal />}
+              {step === 1 && <StepSummary />}
+              {step === 2 && <StepExperience />}
+              {step === 3 && <StepEducation />}
+              {step === 4 && <StepSkills />}
+              {step === 5 && <StepProjects />}
+              {step === 6 && <StepAdditional />}
+              {step === 7 && <StepReview />}
+            </GuidedNavContext.Provider>
           </motion.div>
         </AnimatePresence>
+        </div>
+        <BuilderLivePreview />
       </main>
 
       {/* Sticky bottom nav */}
       <div className="relative z-20 sticky bottom-0 border-t border-white/8 bg-[#212121]/90 backdrop-blur-md">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="mx-auto max-w-3xl xl:max-w-[1140px] px-4 sm:px-6 h-16 flex items-center justify-between">
           <BrandButton variant="ghost" size="md" onClick={back}>
             <ArrowLeft className="size-4" /> Back
           </BrandButton>
           <BrandButton variant="primary" size="lg" onClick={next}>
-            {step === TOTAL_STEPS - 1 ? "Choose Your Template" : "Continue"}
+            {step === TOTAL_STEPS - 1 ? "Choose your template" : "Continue"}
             <ArrowRight className="size-4" />
           </BrandButton>
         </div>

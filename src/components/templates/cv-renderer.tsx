@@ -1,769 +1,386 @@
 "use client";
 
+// Public entry point for drawing a CV.
+//
+//  <CVRenderer cv={cv} />            one A4 page, clipped (thumbnails, previews)
+//  <CVRenderer cv={cv} paginate />   real A4 pages (editor, preview, print)
+//  <CVPrintSource cv={cv} />         the off-screen copy the browser prints
+//
+// Pagination works in two passes. The whole document is laid out once in a
+// hidden measuring sheet; every unbreakable unit reports its position; then
+// each page renders only the units assigned to it. Nothing is ever cut in
+// half, every page keeps its margins, and sidebars run the full page height.
+
 import * as React from "react";
-import { CVDocument, Experience, Education, Project, ProfilePhoto } from "@/lib/cv-data/types";
-import { getTemplate, TemplateDef, PhotoShape, FontPair } from "@/components/templates/registry";
+import { createPortal } from "react-dom";
+import type { CVDocument } from "@/lib/cv-data/types";
+import { RenderProvider, type RenderContext } from "@/components/templates/cv-blocks";
+import { TemplateLayout } from "@/components/templates/cv-layouts";
+import {
+  paginate,
+  pageIndex,
+  samePagination,
+  type FlowSpec,
+  type Pagination,
+  type UnitBox,
+} from "@/components/templates/cv-paginate";
+import { PAGE_H, PAGE_W, resolveTheme, type CVTheme } from "@/components/templates/cv-theme";
 import { cn } from "@/lib/utils";
 
-/* ---------- helpers ---------- */
+export { formatMonth, dateRange } from "@/lib/cv-data/format";
+export { PAGE_H, PAGE_W };
 
-export function formatMonth(iso: string): string {
-  if (!iso) return "";
-  const [y, m] = iso.split("-");
-  if (!y) return iso;
-  if (!m) return y;
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const idx = parseInt(m, 10) - 1;
-  if (idx < 0 || idx > 11) return y;
-  return `${months[idx]} ${y}`;
-}
+/** Gap between stacked pages on screen (matches .cv-doc in cv-document.css). */
+export const PAGE_GAP = 28;
 
-export function dateRange(start: string, end: string, current?: boolean): string {
-  const s = formatMonth(start);
-  const e = current ? "Present" : formatMonth(end);
-  if (!s && !e) return "";
-  if (!s) return e;
-  if (!e) return s;
-  return `${s} — ${e}`;
-}
-
-function fontStack(f: FontPair): { heading: string; body: string } {
-  switch (f) {
-    case "serif":
-      return { heading: "Georgia, 'Times New Roman', serif", body: "Georgia, 'Times New Roman', serif" };
-    case "manrope":
-      return { heading: "var(--font-manrope), var(--font-inter), sans-serif", body: "var(--font-inter), sans-serif" };
-    case "mixed":
-      return { heading: "var(--font-manrope), sans-serif", body: "Georgia, serif" };
-    case "inter":
-    default:
-      return { heading: "var(--font-inter), sans-serif", body: "var(--font-inter), sans-serif" };
-  }
-}
-
-function densityPad(d: string): string {
-  if (d === "compact") return "py-2.5";
-  if (d === "spacious") return "py-4";
-  return "py-3";
-}
-function densityGap(d: string): string {
-  if (d === "compact") return "gap-4";
-  if (d === "spacious") return "gap-7";
-  return "gap-5";
-}
-function marginScale(m: string): number {
-  if (m === "narrow") return 0.88;
-  if (m === "wide") return 1.12;
-  return 1;
-}
-
-/* ---------- photo rendering ---------- */
-
-function PhotoView({
-  photo,
-  shape,
-  size = 96,
-  className,
-}: {
-  photo: ProfilePhoto | null;
-  shape: PhotoShape;
-  size?: number;
+export interface CVRendererProps {
+  cv: CVDocument;
   className?: string;
+  /** Kept for existing callers. Pages are always A4 at 96 dpi (794px wide). */
+  width?: number;
+  showShadow?: boolean;
+  /** Section the editor is focused on; it flashes briefly in the preview. */
+  highlightSection?: string | null;
+  /** Split the document into real pages instead of clipping it to one. */
+  paginate?: boolean;
+  /** Reports the page count whenever it changes (paginated mode only). */
+  onPageCount?: (pages: number) => void;
+}
+
+const useIsoLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
+const ALWAYS = () => true;
+
+export function CVRenderer(props: CVRendererProps) {
+  return props.paginate ? <PagedCV {...props} /> : <SinglePage {...props} />;
+}
+
+function PageShell({
+  theme,
+  measure = false,
+  className,
+  ariaHidden,
+  children,
+}: {
+  theme: CVTheme;
+  measure?: boolean;
+  className?: string;
+  ariaHidden?: boolean;
+  children: React.ReactNode;
 }) {
-  if (!photo || !photo.dataUrl) return null;
-  const radius =
-    shape === "circle" ? "9999px"
-    : shape === "rounded" ? "14%"
-    : shape === "portrait" ? "8px"
-    : shape === "square" ? "8px"
-    : "8px";
+  const def = theme.def;
   return (
     <div
-      className={cn("overflow-hidden bg-neutral-200 shrink-0", className)}
-      style={{
-        width: size,
-        height: shape === "portrait" ? size * 1.25 : size,
-        borderRadius: radius,
-        position: "relative",
-      }}
+      className={cn("cv-page", className)}
+      style={theme.vars}
+      data-template={def.id}
+      data-label={def.label}
+      data-skills={def.skills}
+      data-bullet={def.bullet}
+      data-upper-name={def.upperName ? "" : undefined}
+      data-measure={measure ? "" : undefined}
+      aria-hidden={ariaHidden || undefined}
     >
-      <img
-        src={photo.dataUrl}
-        alt="Profile"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          objectPosition: `${50 + (photo.offsetX || 0) * 0.3}% ${50 + (photo.offsetY || 0) * 0.3}%`,
-          transform: `scale(${photo.zoom || 1})`,
-          transformOrigin: "center",
-        }}
-      />
+      {children}
     </div>
   );
 }
 
-/* ---------- shared section atoms ---------- */
-
-function SectionLabel({
-  children,
-  def,
-}: {
-  children: React.ReactNode;
-  def: TemplateDef;
-}) {
-  const { accent, accentDark } = def.palette;
-  const style = def.accentStyle;
-  if (style === "line") {
-    return (
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10.5px] font-bold tracking-[0.18em] uppercase text-neutral-800">{children}</span>
-        <span className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.1)" }} />
-      </div>
-    );
-  }
-  if (style === "dot") {
-    return (
-      <div className="flex items-center gap-2 mb-2">
-        <span className="size-1.5 rounded-full" style={{ background: accent }} />
-        <span className="text-[10.5px] font-bold tracking-[0.18em] uppercase text-neutral-800">{children}</span>
-      </div>
-    );
-  }
-  if (style === "minimal") {
-    return <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-neutral-500 mb-2">{children}</p>;
-  }
-  // block / band
+function SinglePage({ cv, className, showShadow = true, highlightSection }: CVRendererProps) {
+  const theme = React.useMemo(() => resolveTheme(cv.design), [cv.design]);
+  const ctx = React.useMemo<RenderContext>(
+    () => ({ cv, theme, measuring: false, first: true, show: ALWAYS, any: ALWAYS, highlight: highlightSection ?? null }),
+    [cv, theme, highlightSection]
+  );
   return (
-    <div className="flex items-center gap-2 mb-2">
-      <span className="inline-block w-4 h-0.5 rounded" style={{ background: accent }} />
-      <span className="text-[10.5px] font-bold tracking-[0.18em] uppercase" style={{ color: accentDark }}>{children}</span>
-    </div>
+    <PageShell theme={theme} className={cn(showShadow && "paper-shadow", className)}>
+      <RenderProvider value={ctx}>
+        <TemplateLayout />
+      </RenderProvider>
+    </PageShell>
   );
 }
 
-function ExperienceItem({
-  exp,
-  def,
-  variant = "default",
-}: {
-  exp: Experience;
-  def: TemplateDef;
-  variant?: "default" | "timeline";
-}) {
-  const { accent } = def.palette;
-  const range = dateRange(exp.startDate, exp.endDate, exp.current);
-  if (variant === "timeline") {
-    return (
-      <div className="relative pl-5 pb-4 last:pb-0">
-        <span className="absolute left-0 top-1.5 size-2.5 rounded-full border-2 bg-white" style={{ borderColor: accent }} />
-        <span className="absolute left-[5px] top-4 bottom-0 w-px" style={{ background: "rgba(0,0,0,0.1)" }} />
-        <div className="flex items-baseline justify-between gap-2">
-          <h4 className="font-semibold text-[13px] leading-tight" style={{ color: def.palette.ink }}>
-            {exp.jobTitle || "Job Title"}
-            {exp.company && <span className="font-normal" style={{ color: def.palette.muted }}> · {exp.company}</span>}
-          </h4>
-          {range && <span className="text-[10.5px] whitespace-nowrap shrink-0" style={{ color: def.palette.muted }}>{range}</span>}
+/* ---------- measuring ---------- */
+
+function measureUnits(sheet: HTMLElement): { units: UnitBox[]; flows: Record<string, FlowSpec> } | null {
+  const page = sheet.querySelector<HTMLElement>(".cv-page");
+  if (!page) return null;
+  const pageRect = page.getBoundingClientRect();
+  if (pageRect.width === 0 || page.offsetWidth === 0) return null;
+  // The preview is zoomed with a CSS transform; convert back to layout pixels.
+  const scale = pageRect.width / page.offsetWidth;
+
+  const flows: Record<string, FlowSpec> = {};
+  const units: UnitBox[] = [];
+  const byKey = new Map<string, UnitBox>();
+
+  page.querySelectorAll<HTMLElement>("[data-cv-flow]").forEach((flowEl) => {
+    const flow = flowEl.dataset.cvFlow as string;
+    flows[flow] = { contTop: Number(flowEl.dataset.contTop), limit: Number(flowEl.dataset.limit) };
+    flowEl.querySelectorAll<HTMLElement>("[data-u]").forEach((el) => {
+      const key = el.dataset.u as string;
+      const r = el.getBoundingClientRect();
+      const top = (r.top - pageRect.top) / scale;
+      const bottom = (r.bottom - pageRect.top) / scale;
+      const known = byKey.get(key);
+      if (known) {
+        // Several elements may share a key (a label and the entry under it): keep them together.
+        known.top = Math.min(known.top, top);
+        known.bottom = Math.max(known.bottom, bottom);
+      } else {
+        const box: UnitBox = { key, flow, top, bottom };
+        byKey.set(key, box);
+        units.push(box);
+      }
+    });
+  });
+
+  return { units, flows };
+}
+
+/** Largest distance (px) by which any column of any rendered page passes its limit. */
+function measureOverflow(doc: HTMLElement): number {
+  let worst = 0;
+  doc.querySelectorAll<HTMLElement>(":scope > .cv-page").forEach((page) => {
+    const pageRect = page.getBoundingClientRect();
+    if (pageRect.width === 0 || page.offsetWidth === 0) return;
+    const scale = pageRect.width / page.offsetWidth;
+    page.querySelectorAll<HTMLElement>("[data-cv-flow]").forEach((flowEl) => {
+      const limit = Number(flowEl.dataset.limit);
+      const units = flowEl.querySelectorAll<HTMLElement>("[data-u]");
+      if (units.length < 2) return;
+      units.forEach((el) => {
+        const bottom = (el.getBoundingClientRect().bottom - pageRect.top) / scale;
+        // The first unit of a column cannot move anywhere: if it alone is too tall, leave it.
+        if (el.dataset.u === units[0].dataset.u) return;
+        worst = Math.max(worst, bottom - limit);
+      });
+    });
+  });
+  return worst;
+}
+
+/* ---------- paginated document ---------- */
+
+const MAX_RESERVE = 240;
+
+/** Spacing factors tried, in order, to pull a short spill back onto the previous page. */
+const FIT_LEVELS = [1, 0.86, 0.74, 0.62];
+/** Only a last page holding at most this much content (px) is worth fitting away. */
+const FIT_TAIL = 240;
+
+interface FitState {
+  cv: CVDocument | null;
+  fonts: number;
+  level: number;
+  base: number;
+  done: boolean;
+}
+
+function PagedCV({ cv, className, showShadow = true, highlightSection, onPageCount }: CVRendererProps) {
+  const [fontTick, setFontTick] = React.useState(0);
+  const [fitState, setFitState] = React.useState<FitState>({ cv: null, fonts: 0, level: 0, base: 0, done: false });
+  // Any edit (or font load) starts again from the natural spacing.
+  const fit = fitState.cv === cv && fitState.fonts === fontTick ? fitState : null;
+  const fitLevel = fit?.level ?? 0;
+  const theme = React.useMemo(() => resolveTheme(cv.design, FIT_LEVELS[fitLevel]), [cv.design, fitLevel]);
+  const docRef = React.useRef<HTMLDivElement>(null);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  const [pagination, setPagination] = React.useState<Pagination | null>(null);
+
+  // Extra space held back per page if a rendered page is ever found to
+  // overflow. It stays at 0 unless measuring and rendering disagree.
+  const layoutKey = `${cv.design.templateId}|${cv.design.density}|${cv.design.margins}|${cv.design.typography}`;
+  const [reserve, setReserve] = React.useState({ key: layoutKey, px: 0 });
+  const reservePx = reserve.key === layoutKey ? reserve.px : 0;
+
+  // Web fonts change text metrics when they finish loading.
+  React.useEffect(() => {
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    if (!fonts) return;
+    let alive = true;
+    const bump = () => {
+      if (alive) setFontTick((t) => t + 1);
+    };
+    fonts.ready.then(bump).catch(() => {});
+    fonts.addEventListener?.("loadingdone", bump);
+    return () => {
+      alive = false;
+      fonts.removeEventListener?.("loadingdone", bump);
+    };
+  }, []);
+
+  // Measure, paginate, then verify. The verification only runs once the pages
+  // on screen were rendered from the pagination just computed, so a font that
+  // loads between passes can never be mistaken for an overflow.
+  useIsoLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    const doc = docRef.current;
+    if (!sheet || !doc) return;
+    const measured = measureUnits(sheet);
+    if (!measured) return;
+    const next = paginate(measured.units, measured.flows, reservePx);
+    if (!samePagination(pagination, next)) {
+      setPagination(next);
+      return;
+    }
+    const over = measureOverflow(doc);
+    if (over > 1 && reservePx < MAX_RESERVE) {
+      setReserve({ key: layoutKey, px: Math.min(MAX_RESERVE, reservePx + Math.ceil(over) + 2) });
+      return;
+    }
+
+    // Smart fit: a few lines spilling onto a new page is the most common way a
+    // CV ends up looking unfinished. Tighten spacing step by step and keep the
+    // result only if it actually removes that page.
+    if (fit?.done) return;
+    const stamp = { cv, fonts: fontTick };
+    if (fitLevel === 0) {
+      if (next.pageCount > 1 && next.lastFill <= FIT_TAIL) {
+        setFitState({ ...stamp, level: 1, base: next.pageCount, done: false });
+      }
+      return;
+    }
+    const base = fit?.base ?? next.pageCount;
+    if (next.pageCount < base) setFitState({ ...stamp, level: fitLevel, base, done: true });
+    else if (fitLevel < FIT_LEVELS.length - 1) setFitState({ ...stamp, level: fitLevel + 1, base, done: false });
+    else setFitState({ ...stamp, level: 0, base, done: true });
+  }, [cv, theme, pagination, reservePx, fontTick, layoutKey, fit, fitLevel]);
+
+  const pageCount = pagination?.pageCount ?? 1;
+
+  const onPageCountRef = React.useRef(onPageCount);
+  React.useLayoutEffect(() => {
+    onPageCountRef.current = onPageCount;
+  });
+  React.useEffect(() => {
+    onPageCountRef.current?.(pageCount);
+  }, [pageCount]);
+
+  const measureCtx = React.useMemo<RenderContext>(
+    () => ({ cv, theme, measuring: true, first: true, show: ALWAYS, any: ALWAYS, highlight: null }),
+    [cv, theme]
+  );
+
+  return (
+    <div ref={docRef} className={cn("cv-doc", className)} data-pages={pageCount} data-reserve={reservePx} data-fit={FIT_LEVELS[fitLevel]}>
+      <div className="cv-measure" aria-hidden="true">
+        <div ref={sheetRef}>
+          <PageShell theme={theme} measure>
+            <RenderProvider value={measureCtx}>
+              <TemplateLayout />
+            </RenderProvider>
+          </PageShell>
         </div>
-        {exp.location && <p className="text-[10.5px] mt-0.5" style={{ color: def.palette.muted }}>{exp.location}</p>}
-        {exp.responsibilities && (
-          <ul className="mt-1.5 space-y-1">
-            {exp.responsibilities.split("\n").filter(l => l.trim()).map((line, i) => (
-              <li key={i} className="text-[11.5px] leading-[1.5] flex gap-1.5" style={{ color: def.palette.ink }}>
-                <span style={{ color: accent }}>›</span><span>{line.replace(/^[-•]\s*/, "")}</span>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
-    );
-  }
-  return (
-    <div className="mb-3 last:mb-0">
-      <div className="flex items-baseline justify-between gap-3">
-        <h4 className="font-semibold text-[12.5px] leading-tight" style={{ color: def.palette.ink }}>
-          {exp.jobTitle || "Job Title"}
-          {exp.company && <span className="font-normal" style={{ color: def.palette.muted }}> · {exp.company}</span>}
-        </h4>
-        {range && <span className="text-[10.5px] whitespace-nowrap shrink-0" style={{ color: def.palette.muted }}>{range}</span>}
-      </div>
-      {exp.location && <p className="text-[10.5px] mt-0.5" style={{ color: def.palette.muted }}>{exp.location}</p>}
-      {exp.responsibilities && (
-        <ul className="mt-1 space-y-0.5">
-          {exp.responsibilities.split("\n").filter(l => l.trim()).map((line, i) => (
-            <li key={i} className="text-[11.5px] leading-[1.5] flex gap-1.5" style={{ color: def.palette.ink }}>
-              <span style={{ color: accent }}>•</span><span>{line.replace(/^[-•]\s*/, "")}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function EducationItem({ edu, def }: { edu: Education; def: TemplateDef }) {
-  const range = dateRange(edu.startDate, edu.endDate);
-  const title = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ");
-  return (
-    <div className="mb-2.5 last:mb-0">
-      <div className="flex items-baseline justify-between gap-3">
-        <h4 className="font-semibold text-[12.5px] leading-tight" style={{ color: def.palette.ink }}>
-          {title || "Degree"}
-        </h4>
-        {range && <span className="text-[10.5px] whitespace-nowrap shrink-0" style={{ color: def.palette.muted }}>{range}</span>}
-      </div>
-      {edu.institution && <p className="text-[11.5px] mt-0.5" style={{ color: def.palette.muted }}>{edu.institution}{edu.location ? `, ${edu.location}` : ""}</p>}
-      {edu.description && <p className="text-[11px] mt-0.5 leading-[1.5]" style={{ color: def.palette.muted }}>{edu.description}</p>}
-    </div>
-  );
-}
-
-function ProjectItem({ p, def }: { p: Project; def: TemplateDef }) {
-  return (
-    <div className="mb-2.5 last:mb-0">
-      <div className="flex items-baseline justify-between gap-3">
-        <h4 className="font-semibold text-[12px]" style={{ color: def.palette.ink }}>{p.name || "Project"}</h4>
-        {p.link && <span className="text-[10.5px] truncate max-w-[45%]" style={{ color: def.palette.muted }}>{p.link}</span>}
-      </div>
-      {p.description && <p className="text-[11px] mt-0.5 leading-[1.5]" style={{ color: def.palette.muted }}>{p.description}</p>}
-      {p.technologies && <p className="text-[10.5px] mt-0.5" style={{ color: def.palette.accent }}>{p.technologies}</p>}
-    </div>
-  );
-}
-
-function SkillsCloud({ cv, def }: { cv: CVDocument; def: TemplateDef }) {
-  if (cv.skills.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {cv.skills.map((s) => (
-        <span key={s.id} className="text-[10.5px] px-2 py-0.5 rounded border" style={{ borderColor: "rgba(0,0,0,0.1)", color: def.palette.ink }}>
-          {s.name}
-        </span>
+      {Array.from({ length: pageCount }, (_, i) => (
+        <CVPage
+          key={i}
+          index={i}
+          cv={cv}
+          theme={theme}
+          pagination={pagination}
+          highlight={highlightSection ?? null}
+          className={showShadow ? "paper-shadow" : undefined}
+        />
       ))}
     </div>
   );
 }
 
-function ContactLine({ cv, def, onDark = false }: { cv: CVDocument; def: TemplateDef; onDark?: boolean }) {
-  const p = cv.personalInfo;
-  const items = [p.email, p.phone, p.location].filter(Boolean);
-  const color = onDark ? "rgba(255,255,255,0.7)" : def.palette.muted;
-  return (
-    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px]" style={{ color }}>
-      {items.map((it, i) => <span key={i}>{it}</span>)}
-      {p.links.slice(0, 2).map((l) => <span key={l.id}>{l.url}</span>)}
-    </div>
-  );
-}
-
-/* ---------- main renderer ---------- */
-
-export interface CVRendererProps {
+function CVPage({
+  index,
+  cv,
+  theme,
+  pagination,
+  highlight,
+  className,
+}: {
+  index: number;
   cv: CVDocument;
+  theme: CVTheme;
+  pagination: Pagination | null;
+  highlight: string | null;
   className?: string;
-  width?: number;
-  showShadow?: boolean;
-  /** highlight a section by key */
-  highlightSection?: string | null;
-  /** when true, the document height shrinks to fit content (no A4 minHeight) */
-  fitContent?: boolean;
-}
-
-export function CVRenderer({ cv, className, width = 794, showShadow = true, highlightSection, fitContent = false }: CVRendererProps) {
-  const def = getTemplate(cv.design.templateId);
-  const { palette: pal } = def;
-  // user override of accent color
-  const userAccent = cv.design.accentColor;
-  const effectiveDef: TemplateDef = userAccent
-    ? { ...def, palette: { ...pal, accent: userAccent, accentDark: shadeColor(userAccent, -25) } }
-    : def;
-
-  const fonts = fontStack(effectiveDef.font);
-  const pad = densityPad(cv.design.density);
-  const gap = densityGap(cv.design.density);
-  const mScale = marginScale(cv.design.margins);
-
-  const W = width;
-  const H = width * 1.414;
-
-  const containerStyle: React.CSSProperties = {
-    width: W,
-    minHeight: fitContent ? "auto" : H,
-    background: effectiveDef.palette.paper,
-    color: effectiveDef.palette.ink,
-    fontFamily: fonts.body,
-    fontSize: 12,
-  };
-
-  const sectionHighlight = (key: string) =>
-    highlightSection === key
-      ? { boxShadow: `inset 0 0 0 2px ${effectiveDef.palette.accent}`, borderRadius: 6, transition: "box-shadow 0.3s" }
-      : undefined;
-
-  return (
-    <div
-      className={cn("relative", showShadow && "paper-shadow", className)}
-      style={containerStyle}
-      data-template={effectiveDef.id}
-    >
-      <div style={{ fontFamily: fonts.body, padding: `${48 * mScale}px ${56 * mScale}px`, flex: "1 1 auto", display: "flex", flexDirection: "column", minHeight: fitContent ? "auto" : H }} className={cn(pad, gap, "flex flex-col")}>
-        <ArchetypeRenderer def={effectiveDef} cv={cv} fonts={fonts} sectionHighlight={sectionHighlight} />
-      </div>
-    </div>
-  );
-}
-
-/* shade helper for accent dark */
-function shadeColor(hex: string, percent: number): string {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const r = Math.max(0, Math.min(255, (n >> 16) + Math.round(255 * (percent / 100))));
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + Math.round(255 * (percent / 100))));
-  const b = Math.max(0, Math.min(255, (n & 0xff) + Math.round(255 * (percent / 100))));
-  return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
-}
-
-/* ---------- archetype router ---------- */
-
-function ArchetypeRenderer({
-  def,
-  cv,
-  fonts,
-  sectionHighlight,
-}: {
-  def: TemplateDef;
-  cv: CVDocument;
-  fonts: { heading: string; body: string };
-  sectionHighlight: (k: string) => React.CSSProperties | undefined;
 }) {
-  const HeadingTag: React.ElementType = "div";
-  const headingStyle: React.CSSProperties = { fontFamily: fonts.heading };
-  switch (def.archetype) {
-    case "centered-single": return <CenteredSingle def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "minimal-lines": return <MinimalLines def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "left-sidebar": return <LeftSidebar def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "right-sidebar": return <RightSidebar def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "header-band-twocol": return <HeaderBandTwoCol def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "timeline": return <TimelineArch def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "editorial": return <Editorial def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "top-photo": return <TopPhoto def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "grid-blocks": return <GridBlocks def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "split-horizontal": return <SplitHorizontal def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "bold-accent": return <BoldAccent def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    case "dense-compact": return <DenseCompact def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-    default: return <HeaderBandTwoCol def={def} cv={cv} headingStyle={headingStyle} sectionHighlight={sectionHighlight} />;
-  }
-}
+  const ctx = React.useMemo<RenderContext>(() => {
+    const idx = pagination ? pageIndex(pagination, index) : null;
+    return {
+      cv,
+      theme,
+      measuring: false,
+      first: index === 0,
+      show: idx ? (key) => idx.units.has(key) : ALWAYS,
+      any: idx ? (prefix) => idx.prefixes.has(prefix) : ALWAYS,
+      highlight,
+    };
+  }, [cv, theme, pagination, index, highlight]);
 
-/* ---------- shared header components ---------- */
-
-function NameHeader({
-  cv,
-  def,
-  align,
-  onDark = false,
-  headingStyle,
-}: {
-  cv: CVDocument;
-  def: TemplateDef;
-  align: "left" | "center" | "right";
-  onDark?: boolean;
-  headingStyle: React.CSSProperties;
-}) {
-  const p = cv.personalInfo;
-  const nameColor = onDark ? def.palette.surfaceText : def.palette.ink;
-  const titleColor = onDark ? "rgba(255,255,255,0.8)" : def.palette.accent;
   return (
-    <div style={{ textAlign: align, ...headingStyle }}>
-      <h1 className="text-[26px] font-extrabold tracking-tight leading-none" style={{ color: nameColor }}>
-        {p.fullName || "Your Name"}
-      </h1>
-      {p.professionalTitle && (
-        <p className="text-[13px] font-medium mt-1" style={{ color: titleColor }}>{p.professionalTitle}</p>
-      )}
-    </div>
+    <PageShell theme={theme} className={className}>
+      <RenderProvider value={ctx}>
+        <TemplateLayout />
+      </RenderProvider>
+    </PageShell>
   );
 }
 
-/* ===== 1. CENTERED SINGLE ===== */
-function CenteredSingle({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  return (
-    <div className="max-w-[460px] mx-auto w-full">
-      <header className="text-center pb-4 mb-5" style={sectionHighlight("personal")}>
-        <NameHeader cv={cv} def={def} align="center" headingStyle={headingStyle} />
-        <div className="mt-2"><ContactLine cv={cv} def={def} /></div>
-      </header>
-      {cv.summary && <section className="mb-4" style={sectionHighlight("summary")}><SectionLabel def={def}>Summary</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      {cv.experience.length > 0 && <section className="mb-4" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-      {cv.education.length > 0 && <section className="mb-4" style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-      {cv.skills.length > 0 && <section className="mb-4" style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><p className="text-[11.5px]" style={{ color: def.palette.ink }}>{cv.skills.map(s => s.name).join(" · ")}</p></section>}
-      {cv.projects.length > 0 && <section className="mb-4" style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-      {cv.certifications.length > 0 && <section className="mb-4"><SectionLabel def={def}>Certifications</SectionLabel>{cv.certifications.map(c => <div key={c.id} className="mb-1"><span className="text-[11.5px] font-medium" style={{ color: def.palette.ink }}>{c.name}</span><span className="text-[10.5px]" style={{ color: def.palette.muted }}> — {c.issuer}{c.date ? `, ${formatMonth(c.date)}` : ""}</span></div>)}</section>}
-      {cv.languages.length > 0 && <section className="mb-4"><SectionLabel def={def}>Languages</SectionLabel><p className="text-[11.5px]" style={{ color: def.palette.ink }}>{cv.languages.map(l => `${l.name} (${l.level})`).join(" · ")}</p></section>}
-    </div>
-  );
+/* ---------- print ---------- */
+
+let printSources = 0;
+
+function printTitle(cv: CVDocument): string {
+  const person = cv.personalInfo.fullName.trim();
+  const docName = cv.name.trim();
+  const generic = !docName || /^untitled cv$/i.test(docName);
+  const title = person ? (generic ? `${person} - CV` : `${person} - ${docName}`) : generic ? "CV" : docName;
+  return title.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/* ===== 2. MINIMAL LINES ===== */
-function MinimalLines({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  return (
-    <div className="w-full">
-      <header className="pb-4 mb-5 border-b" style={{ borderColor: "rgba(0,0,0,0.12)", ...sectionHighlight("personal") }}>
-        <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-        <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-      </header>
-      {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>Summary</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      {cv.experience.length > 0 && <section className="mb-5" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-      <div className="grid grid-cols-2 gap-6">
-        {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-      </div>
-      {cv.projects.length > 0 && <section className="mt-5" style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-    </div>
-  );
-}
+/**
+ * Off-screen, full-size copy of the CV that the browser prints. While it is
+ * mounted, printing the page (the Download button or Ctrl/Cmd+P) outputs the
+ * CV alone, one sheet per page, and names the PDF after its owner.
+ */
+export function CVPrintSource({ cv }: { cv: CVDocument }) {
+  const [mounted, setMounted] = React.useState(false);
 
-/* ===== 3. LEFT SIDEBAR ===== */
-function LeftSidebar({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { surface, surfaceText, accent } = def.palette;
-  return (
-    <div className="grid grid-cols-[1fr_1.6fr] -mx-14 -my-12 flex-1" style={{ minHeight: "100%" }}>
-      {/* sidebar */}
-      <aside className="p-7 flex flex-col" style={{ background: surface, color: surfaceText }}>
-        {def.photoShape !== "none" && p.photo && (
-          <div className="mb-5 flex justify-center">
-            <PhotoView photo={p.photo} shape={def.photoShape} size={100} />
-          </div>
-        )}
-        <div className="mb-5">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Contact</p>
-          <div className="space-y-1 text-[11px] opacity-90">
-            {p.email && <p>{p.email}</p>}
-            {p.phone && <p>{p.phone}</p>}
-            {p.location && <p>{p.location}</p>}
-            {p.links.map(l => <p key={l.id}>{l.url}</p>)}
-          </div>
-        </div>
-        {cv.skills.length > 0 && (
-          <div className="mb-5">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Skills</p>
-            <div className="space-y-1">
-              {cv.skills.map(s => (
-                <div key={s.id} className="text-[11px] flex items-center gap-2 opacity-90">
-                  <span className="size-1 rounded-full" style={{ background: accent }} />{s.name}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {cv.languages.length > 0 && (
-          <div className="mb-5">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Languages</p>
-            {cv.languages.map(l => <div key={l.id} className="text-[11px] flex justify-between opacity-90"><span>{l.name}</span><span className="opacity-60">{l.level}</span></div>)}
-          </div>
-        )}
-        {cv.interests.length > 0 && (
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Interests</p>
-            <p className="text-[11px] opacity-90">{cv.interests.map(i => i.name).join(", ")}</p>
-          </div>
-        )}
-      </aside>
-      {/* main */}
-      <main className="p-8" style={{ background: def.palette.paper, color: def.palette.ink }}>
-        <header className="pb-4 mb-5" style={sectionHighlight("personal")}>
-          <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-        </header>
-        {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-        {cv.experience.length > 0 && <section className="mb-5" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-        {cv.education.length > 0 && <section className="mb-5" style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-      </main>
-    </div>
-  );
-}
+  React.useEffect(() => {
+    setMounted(true);
+    printSources += 1;
+    document.documentElement.classList.add("cv-printing");
+    return () => {
+      printSources -= 1;
+      if (printSources <= 0) document.documentElement.classList.remove("cv-printing");
+    };
+  }, []);
 
-/* ===== 4. RIGHT SIDEBAR ===== */
-function RightSidebar({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { surface, surfaceText, accent } = def.palette;
-  return (
-    <div className="grid grid-cols-[1.6fr_1fr] -mx-14 -my-12 flex-1" style={{ minHeight: "100%" }}>
-      <main className="p-8" style={{ background: def.palette.paper, color: def.palette.ink }}>
-        <header className="pb-4 mb-5" style={sectionHighlight("personal")}>
-          <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-          <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-        </header>
-        {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-        {cv.experience.length > 0 && <section className="mb-5" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-        {cv.education.length > 0 && <section className="mb-5" style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-      </main>
-      <aside className="p-7" style={{ background: surface, color: surfaceText }}>
-        {def.photoShape !== "none" && p.photo && (
-          <div className="mb-5"><PhotoView photo={p.photo} shape={def.photoShape} size={100} /></div>
-        )}
-        {cv.skills.length > 0 && (
-          <div className="mb-5">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Skills</p>
-            <div className="space-y-1">{cv.skills.map(s => <div key={s.id} className="text-[11px] flex items-center gap-2 opacity-90"><span className="size-1 rounded-full" style={{ background: accent }} />{s.name}</div>)}</div>
-          </div>
-        )}
-        {cv.languages.length > 0 && (
-          <div className="mb-5">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Languages</p>
-            {cv.languages.map(l => <div key={l.id} className="text-[11px] flex justify-between opacity-90"><span>{l.name}</span><span className="opacity-60">{l.level}</span></div>)}
-          </div>
-        )}
-        {cv.certifications.length > 0 && (
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 mb-2">Certifications</p>
-            {cv.certifications.map(c => <div key={c.id} className="text-[11px] mb-1 opacity-90"><p>{c.name}</p><p className="opacity-60 text-[10px]">{c.issuer}</p></div>)}
-          </div>
-        )}
-      </aside>
-    </div>
-  );
-}
+  const title = printTitle(cv);
+  React.useEffect(() => {
+    let previous: string | null = null;
+    const before = () => {
+      previous = document.title;
+      document.title = title;
+    };
+    const after = () => {
+      if (previous !== null) document.title = previous;
+      previous = null;
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      after();
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, [title]);
 
-/* ===== 5. HEADER BAND TWO COL ===== */
-function HeaderBandTwoCol({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent, accentDark } = def.palette;
-  return (
-    <div>
-      <header className="pb-4 mb-5 border-b-2" style={{ borderColor: accent, ...sectionHighlight("personal") }}>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-            <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-          </div>
-          {def.photoShape !== "none" && p.photo && <PhotoView photo={p.photo} shape={def.photoShape} size={80} />}
-        </div>
-      </header>
-      <div className="grid grid-cols-[1.7fr_1fr] gap-7">
-        <div className="space-y-5">
-          {cv.summary && <section style={sectionHighlight("summary")}><SectionLabel def={def}>Summary</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-          {cv.experience.length > 0 && <section style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-          {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-        </div>
-        <div className="space-y-5">
-          {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-          {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-          {cv.certifications.length > 0 && <section><SectionLabel def={def}>Certifications</SectionLabel>{cv.certifications.map(c => <div key={c.id} className="mb-1.5"><p className="text-[11.5px] font-medium" style={{ color: def.palette.ink }}>{c.name}</p><p className="text-[10.5px]" style={{ color: def.palette.muted }}>{c.issuer}{c.date ? ` · ${formatMonth(c.date)}` : ""}</p></div>)}</section>}
-          {cv.languages.length > 0 && <section><SectionLabel def={def}>Languages</SectionLabel>{cv.languages.map(l => <div key={l.id} className="flex justify-between text-[11.5px]"><span style={{ color: def.palette.ink }}>{l.name}</span><span style={{ color: def.palette.muted }}>{l.level}</span></div>)}</section>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===== 6. TIMELINE ===== */
-function TimelineArch({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent } = def.palette;
-  return (
-    <div>
-      <header className="flex items-center gap-4 pb-4 mb-5 border-b-2" style={{ borderColor: accent, ...sectionHighlight("personal") }}>
-        {def.photoShape !== "none" && p.photo && <PhotoView photo={p.photo} shape={def.photoShape} size={64} />}
-        <div>
-          <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-          <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-        </div>
-      </header>
-      {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>About</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      {cv.experience.length > 0 && <section className="mb-5" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} variant="timeline" />)}</section>}
-      <div className="grid grid-cols-2 gap-6">
-        {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-      </div>
-      {cv.projects.length > 0 && <section className="mt-5" style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-    </div>
-  );
-}
-
-/* ===== 7. EDITORIAL ===== */
-function Editorial({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  return (
-    <div>
-      <header className="pb-5 mb-6 text-center" style={sectionHighlight("personal")}>
-        <NameHeader cv={cv} def={def} align="center" headingStyle={headingStyle} />
-        <div className="mt-2 flex justify-center"><span className="h-0.5 w-10" style={{ background: def.palette.accent }} /></div>
-        <div className="mt-2.5"><ContactLine cv={cv} def={def} /></div>
-      </header>
-      {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><p className="text-[12.5px] leading-[1.7] text-center px-6 italic" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      <div className="grid grid-cols-2 gap-7">
-        <div className="space-y-5">
-          {cv.experience.length > 0 && <section style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-          {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-        </div>
-        <div className="space-y-5">
-          {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-          {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><p className="text-[11.5px] leading-[1.7]" style={{ color: def.palette.ink }}>{cv.skills.map(s => s.name).join(", ")}</p></section>}
-          {cv.languages.length > 0 && <section><SectionLabel def={def}>Languages</SectionLabel>{cv.languages.map(l => <div key={l.id} className="flex justify-between text-[11.5px]"><span style={{ color: def.palette.ink }}>{l.name}</span><span style={{ color: def.palette.muted }}>{l.level}</span></div>)}</section>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===== 8. TOP PHOTO ===== */
-function TopPhoto({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent, surface } = def.palette;
-  const photoSize = def.photoShape === "portrait" ? 110 : 96;
-  return (
-    <div>
-      <header className="flex items-center gap-5 pb-5 mb-5" style={{ borderBottom: `2px solid ${accent}`, ...sectionHighlight("personal") }}>
-        {def.photoShape !== "none" && (
-          p.photo ? <PhotoView photo={p.photo} shape={def.photoShape} size={photoSize} /> :
-          <div className="shrink-0 flex items-center justify-center text-neutral-300" style={{ width: photoSize, height: def.photoShape === "portrait" ? photoSize * 1.25 : photoSize, borderRadius: def.photoShape === "circle" ? "9999px" : "8px", border: "2px dashed rgba(0,0,0,0.12)" }}>
-            <span className="text-[10px]">Photo</span>
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-          <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-        </div>
-      </header>
-      {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>About</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      {cv.experience.length > 0 && <section className="mb-5" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-      <div className="grid grid-cols-2 gap-6">
-        {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-      </div>
-      {cv.projects.length > 0 && <section className="mt-5" style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-    </div>
-  );
-}
-
-/* ===== 9. GRID BLOCKS ===== */
-function GridBlocks({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  return (
-    <div>
-      <header className="pb-4 mb-5 flex items-end justify-between gap-4 border-b" style={{ borderColor: "rgba(0,0,0,0.1)", ...sectionHighlight("personal") }}>
-        <div>
-          <NameHeader cv={cv} def={def} align="left" headingStyle={headingStyle} />
-          <div className="mt-1.5"><ContactLine cv={cv} def={def} /></div>
-        </div>
-      </header>
-      <div className="grid grid-cols-2 gap-5">
-        {cv.summary && <section className="col-span-2" style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-        {cv.experience.length > 0 && <section className="col-span-2" style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-        {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-        {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        {cv.projects.length > 0 && <section className="col-span-2" style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-      </div>
-    </div>
-  );
-}
-
-/* ===== 10. SPLIT HORIZONTAL ===== */
-function SplitHorizontal({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent, surface, surfaceText } = def.palette;
-  return (
-    <div className="-mx-14 -my-12 flex-1 flex flex-col" style={{ minHeight: "100%" }}>
-      <header className="p-8 pb-6" style={{ background: surface, color: surfaceText, ...sectionHighlight("personal") }}>
-        <div className="flex items-center gap-4">
-          {def.photoShape !== "none" && p.photo && <PhotoView photo={p.photo} shape={def.photoShape} size={72} />}
-          <div>
-            <h1 className="text-[24px] font-extrabold tracking-tight leading-none" style={{ color: surfaceText }}>{p.fullName || "Your Name"}</h1>
-            {p.professionalTitle && <p className="text-[13px] mt-1 opacity-80">{p.professionalTitle}</p>}
-            <div className="mt-1.5 flex flex-wrap gap-x-3 text-[10.5px] opacity-75">
-              {p.email && <span>{p.email}</span>}
-              {p.phone && <span>{p.phone}</span>}
-              {p.location && <span>{p.location}</span>}
-            </div>
-          </div>
-        </div>
-      </header>
-      <div className="flex-1 p-8 grid grid-cols-2 gap-7" style={{ background: def.palette.paper, color: def.palette.ink }}>
-        <div className="space-y-5">
-          {cv.summary && <section style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-          {cv.experience.length > 0 && <section style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-        </div>
-        <div className="space-y-5">
-          {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><SkillsCloud cv={cv} def={def} /></section>}
-          {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-          {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===== 11. BOLD ACCENT ===== */
-function BoldAccent({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent, accentDark, surface } = def.palette;
-  return (
-    <div>
-      <header className="relative mb-6 p-6 -mx-4 rounded-md overflow-hidden" style={{ background: surface, color: "#fff", ...sectionHighlight("personal") }}>
-        <div className="absolute -right-8 -top-8 size-32 rounded-full opacity-20" style={{ background: accent }} />
-        <div className="relative flex items-center gap-4">
-          {def.photoShape !== "none" && p.photo && <PhotoView photo={p.photo} shape={def.photoShape} size={80} />}
-          <div>
-            <h1 className="text-[28px] font-extrabold tracking-tight leading-none" style={{ fontFamily: headingStyle.fontFamily, color: "#fff" }}>{p.fullName || "Your Name"}</h1>
-            {p.professionalTitle && <p className="text-[14px] mt-1.5 font-medium opacity-90">{p.professionalTitle}</p>}
-            <div className="mt-2 flex flex-wrap gap-x-3 text-[10.5px] opacity-75">
-              {p.email && <span>{p.email}</span>}
-              {p.phone && <span>{p.phone}</span>}
-              {p.location && <span>{p.location}</span>}
-            </div>
-          </div>
-        </div>
-      </header>
-      {cv.summary && <section className="mb-5" style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11.5px] leading-[1.6]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      <div className="grid grid-cols-[1.6fr_1fr] gap-7">
-        <div className="space-y-5">
-          {cv.experience.length > 0 && <section style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-          {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-        </div>
-        <div className="space-y-5">
-          {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><div className="space-y-1.5">{cv.skills.map(s => <div key={s.id} className="text-[11.5px] flex items-center gap-2" style={{ color: def.palette.ink }}><span className="size-1.5 rounded-full" style={{ background: accent }} />{s.name}</div>)}</div></section>}
-          {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===== 12. DENSE COMPACT ===== */
-function DenseCompact({ def, cv, headingStyle, sectionHighlight }: any) {
-  const p = cv.personalInfo;
-  const { accent } = def.palette;
-  return (
-    <div>
-      <header className="pb-3 mb-4 flex items-end justify-between gap-4 border-b" style={{ borderColor: accent, ...sectionHighlight("personal") }}>
-        <div>
-          <h1 className="text-[22px] font-extrabold tracking-tight leading-none" style={{ ...headingStyle, color: def.palette.ink }}>{p.fullName || "Your Name"}</h1>
-          {p.professionalTitle && <p className="text-[12px] mt-0.5" style={{ color: accent }}>{p.professionalTitle}</p>}
-        </div>
-        <div className="text-right text-[10px] space-y-0.5" style={{ color: def.palette.muted }}>
-          {p.email && <div>{p.email}</div>}
-          {p.phone && <div>{p.phone}</div>}
-          {p.location && <div>{p.location}</div>}
-        </div>
-      </header>
-      {cv.summary && <section className="mb-4" style={sectionHighlight("summary")}><SectionLabel def={def}>Profile</SectionLabel><p className="text-[11px] leading-[1.5]" style={{ color: def.palette.ink }}>{cv.summary}</p></section>}
-      <div className="grid grid-cols-[1.5fr_1fr] gap-5">
-        <div className="space-y-4">
-          {cv.experience.length > 0 && <section style={sectionHighlight("experience")}><SectionLabel def={def}>Experience</SectionLabel>{cv.experience.map((e: Experience) => <ExperienceItem key={e.id} exp={e} def={def} />)}</section>}
-          {cv.projects.length > 0 && <section style={sectionHighlight("projects")}><SectionLabel def={def}>Projects</SectionLabel>{cv.projects.map((pr: Project) => <ProjectItem key={pr.id} p={pr} def={def} />)}</section>}
-        </div>
-        <div className="space-y-4">
-          {cv.skills.length > 0 && <section style={sectionHighlight("skills")}><SectionLabel def={def}>Skills</SectionLabel><p className="text-[11px]" style={{ color: def.palette.ink }}>{cv.skills.map(s => s.name).join(", ")}</p></section>}
-          {cv.education.length > 0 && <section style={sectionHighlight("education")}><SectionLabel def={def}>Education</SectionLabel>{cv.education.map((e: Education) => <EducationItem key={e.id} edu={e} def={def} />)}</section>}
-          {cv.certifications.length > 0 && <section><SectionLabel def={def}>Certs</SectionLabel>{cv.certifications.map(c => <div key={c.id} className="mb-1"><p className="text-[11px] font-medium" style={{ color: def.palette.ink }}>{c.name}</p><p className="text-[10px]" style={{ color: def.palette.muted }}>{c.issuer}</p></div>)}</section>}
-        </div>
-      </div>
-    </div>
+  if (!mounted) return null;
+  return createPortal(
+    <div id="nirvash-print-source" className="cv-print-root" aria-hidden="true">
+      <CVRenderer cv={cv} paginate showShadow={false} />
+    </div>,
+    document.body
   );
 }

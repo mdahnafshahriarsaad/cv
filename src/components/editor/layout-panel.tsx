@@ -21,7 +21,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { useCVStore } from "@/lib/store/cv-store";
 import { cn } from "@/lib/utils";
-import { SectionKey } from "@/lib/cv-data/types";
+import type { SectionKey } from "@/lib/cv-data/types";
+import { getTemplate } from "@/components/templates/registry";
+import { sectionHasContent } from "@/components/templates/cv-blocks";
+import { sectionPlacement, sideColumnLabel } from "@/components/templates/cv-layouts";
 
 const SECTION_LABELS: Record<SectionKey, string> = {
   personal: "Personal Information",
@@ -69,8 +72,16 @@ export function LayoutPanel() {
     setSectionOrder(arrayMove(cv.design.sectionOrder, oldIndex, newIndex));
   };
 
-  // Only show sections that make sense to reorder (exclude personal which is always first)
+  // Personal details always open the CV, so they are not reorderable.
   const order = cv.design.sectionOrder.filter((s) => s !== "personal");
+  const template = getTemplate(cv.design.templateId);
+  const sideLabel = sideColumnLabel(template.archetype);
+  const placementLabel = (key: SectionKey) => {
+    const p = sectionPlacement(template.archetype, key);
+    if (p === "header") return "Header";
+    if (p === "side") return sideLabel ?? "Main";
+    return sideLabel ? "Main column" : null;
+  };
 
   return (
     <div className="p-4 space-y-7">
@@ -95,9 +106,10 @@ export function LayoutPanel() {
             );
           })}
         </div>
+        <p className="text-[11px] text-white/40 mt-2.5">
+          If only a few lines spill onto a new page, spacing is tightened slightly so they fit.
+        </p>
       </div>
-
-      {/* Margins */}
       <div>
         <p className="text-[11px] font-bold tracking-[0.18em] text-white/35 uppercase mb-3">Margins</p>
         <div className="grid grid-cols-3 gap-2">
@@ -122,18 +134,27 @@ export function LayoutPanel() {
 
       {/* Section order */}
       <div>
-        <p className="text-[11px] font-bold tracking-[0.18em] text-white/35 uppercase mb-1">Section Order</p>
-        <p className="text-[12px] text-white/40 mb-3">Drag to reorder. Personal Information always stays on top.</p>
+        <p className="text-[11px] font-bold tracking-[0.18em] text-white/35 uppercase mb-1">Section order</p>
+        <p className="text-[12px] text-white/40 mb-3">
+          Drag to reorder. Empty sections are left off the CV.
+          {sideLabel && ` In ${template.name}, some sections sit in the ${sideLabel.toLowerCase()}; their order applies within that column.`}
+        </p>
         <div className="rounded-[10px] border border-white/10 bg-white/[0.02] p-2">
           <div className="flex items-center gap-2 px-2 py-2 mb-1 text-[11px] font-semibold text-white/40">
-            <span className="w-5" />
-            <span className="flex-1">Personal Information</span>
-            <span className="text-[10px]">Pinned</span>
+            <span className="w-4" />
+            <span className="flex-1">Personal information</span>
+            <span className="text-[10px]">Always first</span>
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={order} strategy={verticalListSortingStrategy}>
               {order.map((s) => (
-                <SortableRow key={s} id={s} label={SECTION_LABELS[s]} />
+                <SortableRow
+                  key={s}
+                  id={s}
+                  label={SECTION_LABELS[s]}
+                  empty={!sectionHasContent(cv, s)}
+                  placement={placementLabel(s)}
+                />
               ))}
             </SortableContext>
           </DndContext>
@@ -143,7 +164,7 @@ export function LayoutPanel() {
   );
 }
 
-function SortableRow({ id, label }: { id: string; label: string }) {
+function SortableRow({ id, label, empty, placement }: { id: string; label: string; empty: boolean; placement: string | null }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -154,14 +175,19 @@ function SortableRow({ id, label }: { id: string; label: string }) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-2 px-2 py-2 rounded-[8px] cursor-grab active:cursor-grabbing",
+        "flex items-center gap-2 px-2 py-2 rounded-[8px] cursor-grab active:cursor-grabbing touch-none",
         isDragging ? "bg-nirvash-red/15 border border-nirvash-red/40 z-10 shadow-lg" : "hover:bg-white/[0.03]"
       )}
       {...attributes}
       {...listeners}
     >
       <GripVertical className="size-4 text-white/30" />
-      <span className="flex-1 text-[13px] font-medium text-white/80">{label}</span>
+      <span className={cn("flex-1 text-[13px] font-medium", empty ? "text-white/35" : "text-white/80")}>{label}</span>
+      {empty ? (
+        <span className="text-[10px] font-medium text-white/30">Empty</span>
+      ) : (
+        placement && <span className="text-[10px] font-medium text-white/40">{placement}</span>
+      )}
     </div>
   );
 }

@@ -1,0 +1,946 @@
+/*
+ * CV document styles.
+ * Imported by globals.css outside any cascade layer, so these rules win over
+ * the layered base styles (global h1/h2 fonts) without specificity tricks.
+ * Colours, fonts and spacing arrive as --cv-* custom properties set on .cv-page
+ * by resolveTheme(). All vertical rhythm comes from flex `gap`, never margins,
+ * so a page that shows only part of a section keeps exact spacing.
+ */
+
+/* ---------- document + pages ---------- */
+
+.cv-doc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 794px;
+}
+
+.cv-measure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 794px;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cv-page {
+  position: relative;
+  flex: none;
+  width: 794px;
+  height: 1122px;
+  overflow: hidden;
+  background: var(--cv-paper);
+  color: var(--cv-ink);
+  font-family: var(--cv-font-body);
+  font-size: var(--cv-fs);
+  font-weight: 400;
+  line-height: var(--cv-lh);
+  letter-spacing: 0;
+  text-align: left;
+  font-feature-settings: "kern", "liga", "calt";
+  font-variant-numeric: normal;
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.cv-page[data-measure] {
+  height: auto;
+  min-height: 1122px;
+  overflow: visible;
+}
+
+.cv-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cv-page[data-measure] > .cv-frame {
+  height: auto;
+  min-height: 1122px;
+}
+
+:where(.cv-page) :where(h1, h2, h3, h4, p, ul, li) {
+  margin: 0;
+  padding: 0;
+}
+
+:where(.cv-page) :where(h1, h2, h3, h4) {
+  font-family: var(--cv-font-heading);
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-wrap: wrap;
+}
+
+:where(.cv-page) ul {
+  list-style: none;
+}
+
+:where(.cv-page) a {
+  color: inherit;
+  text-decoration: none;
+  cursor: inherit;
+}
+
+/* A coloured band or sidebar re-points the text tokens at its own palette. */
+.cv-surface {
+  background: var(--cv-surface);
+  color: var(--cv-surface-ink);
+  --cv-ink: var(--cv-surface-ink);
+  --cv-ink-soft: var(--cv-surface-ink-soft);
+  --cv-muted: var(--cv-surface-muted);
+  --cv-line: var(--cv-surface-line);
+  --cv-line-strong: var(--cv-surface-line-strong);
+  --cv-accent: var(--cv-surface-accent);
+  --cv-accent-ink: var(--cv-surface-accent);
+  --cv-on-accent: var(--cv-surface);
+  --cv-tint: var(--cv-surface-tint);
+}
+
+/* ---------- flow, sections, entries ---------- */
+
+.cv-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-section);
+  min-width: 0;
+}
+
+.cv-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-title);
+  min-width: 0;
+}
+
+.cv-entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-item);
+  min-width: 0;
+}
+
+.cv-entries--tight {
+  gap: calc(var(--cv-gap-item) * 0.62);
+}
+
+.cv-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-bullet);
+  min-width: 0;
+}
+
+.cv-entry-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08em;
+  min-width: 0;
+}
+
+.cv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 1.3em;
+  min-width: 0;
+}
+
+.cv-entry-title {
+  min-width: 0;
+  font-size: 1.04em;
+  font-weight: 600;
+  line-height: 1.32;
+  color: var(--cv-ink);
+}
+
+.cv-entry-title--light {
+  font-size: 1em;
+  font-weight: 500;
+}
+
+.cv-date {
+  flex: none;
+  font-size: 0.87em;
+  line-height: 1.4;
+  color: var(--cv-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-entry-sub {
+  font-size: 0.95em;
+  line-height: 1.42;
+  color: var(--cv-muted);
+}
+
+.cv-org {
+  font-weight: 500;
+  color: var(--cv-ink-soft);
+}
+
+.cv-sep {
+  padding: 0 0.45em;
+  color: var(--cv-line-strong);
+}
+
+.cv-text {
+  color: var(--cv-ink-soft);
+  white-space: pre-line;
+}
+
+.cv-entry-text {
+  font-size: 0.97em;
+  color: var(--cv-ink-soft);
+  white-space: pre-line;
+}
+
+.cv-entry-meta {
+  font-size: 0.88em;
+  line-height: 1.42;
+  color: var(--cv-accent-ink);
+}
+
+.cv-link {
+  flex: none;
+  max-width: 55%;
+  font-size: 0.87em;
+  line-height: 1.4;
+  color: var(--cv-muted);
+  text-align: right;
+}
+
+.cv-entry--narrow .cv-link {
+  max-width: none;
+  text-align: left;
+}
+
+/* ---------- bullets ---------- */
+
+.cv-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-bullet);
+  min-width: 0;
+}
+
+.cv-bullet {
+  display: grid;
+  grid-template-columns: 1.05em minmax(0, 1fr);
+  font-size: 0.97em;
+  color: var(--cv-ink-soft);
+}
+
+.cv-bullet::before {
+  content: "";
+  width: 0.3em;
+  height: 0.3em;
+  margin-top: calc((var(--cv-lh) * 1em - 0.3em) / 2);
+  border-radius: 50%;
+  background: var(--cv-accent);
+}
+
+[data-bullet="square"] .cv-bullet::before {
+  border-radius: 0;
+}
+
+[data-bullet="dash"] .cv-bullet::before {
+  width: 0.5em;
+  height: 1.5px;
+  margin-top: calc((var(--cv-lh) * 1em - 1.5px) / 2);
+  border-radius: 0;
+}
+
+[data-bullet="chevron"] .cv-bullet::before {
+  width: 0.36em;
+  height: 0.36em;
+  margin-top: calc((var(--cv-lh) * 1em - 0.36em) / 2);
+  border-radius: 0;
+  border-top: 1.5px solid var(--cv-accent);
+  border-right: 1.5px solid var(--cv-accent);
+  background: none;
+  transform: rotate(45deg);
+}
+
+/* ---------- section labels ---------- */
+
+.cv-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  font-family: var(--cv-font-heading);
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv-ink);
+}
+
+[data-label="bar"] .cv-label {
+  color: var(--cv-accent-ink);
+}
+
+[data-label="bar"] .cv-label::before {
+  content: "";
+  flex: none;
+  width: 1.5em;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--cv-accent);
+}
+
+[data-label="rule"] .cv-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--cv-line-strong);
+}
+
+[data-label="dot"] .cv-label::before {
+  content: "";
+  flex: none;
+  width: 0.56em;
+  height: 0.56em;
+  border-radius: 50%;
+  background: var(--cv-accent);
+}
+
+[data-label="plain"] .cv-label {
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--cv-muted);
+}
+
+[data-label="tag"] .cv-label > span {
+  padding: 0.36em 0.72em 0.32em;
+  border-radius: 2px;
+  background: var(--cv-accent);
+  color: var(--cv-on-accent);
+  letter-spacing: 0.12em;
+}
+
+[data-label="underline"] .cv-label {
+  position: relative;
+  display: block;
+  padding-bottom: 0.38em;
+  border-bottom: 1px solid var(--cv-line-strong);
+  font-size: 1.1em;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}
+
+[data-label="underline"] .cv-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 2.6em;
+  height: 2px;
+  background: var(--cv-accent);
+}
+
+/* Labels inside a band or sidebar always use one quiet style. */
+.cv-page .cv-surface .cv-label {
+  display: block;
+  padding-bottom: 0.55em;
+  border-bottom: 1px solid var(--cv-line);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+}
+
+.cv-page .cv-surface .cv-label::before,
+.cv-page .cv-surface .cv-label::after {
+  content: none;
+}
+
+.cv-page .cv-surface .cv-label > span {
+  padding: 0;
+  background: none;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+/* ---------- skills, inline lists, key/value rows ---------- */
+
+.cv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44em;
+}
+
+.cv-chip {
+  padding: 0.22em 0.62em;
+  border: 1px solid var(--cv-line-strong);
+  border-radius: 3px;
+  font-size: 0.9em;
+  line-height: 1.3;
+  color: var(--cv-ink-soft);
+}
+
+[data-skills="tags"] .cv-chip {
+  border-color: transparent;
+  background: var(--cv-tint);
+  color: var(--cv-accent-ink);
+  font-weight: 500;
+}
+
+.cv-inline {
+  color: var(--cv-ink-soft);
+}
+
+/* Dot-separated list. Each item carries its dot in left padding; the list is
+   shifted left by the same amount and clipped, so a line never starts or ends
+   with a stray dot however the items wrap. */
+.cv-inline--dots {
+  overflow: hidden;
+}
+
+.cv-inline--dots ul {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -1.4em;
+}
+
+.cv-inline--dots li {
+  position: relative;
+  padding-left: 1.4em;
+}
+
+.cv-inline--dots li::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+  width: 1.4em;
+  text-align: center;
+  color: var(--cv-line-strong);
+}
+
+.cv-entry-org {
+  font-weight: 400;
+  color: var(--cv-muted);
+}
+
+.cv-nb {
+  white-space: nowrap;
+}
+
+.cv-dim {
+  color: var(--cv-muted);
+}
+
+.cv-dotlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.34em;
+}
+
+.cv-dotlist li {
+  display: grid;
+  grid-template-columns: 0.95em minmax(0, 1fr);
+  font-size: 0.95em;
+  line-height: 1.4;
+  color: var(--cv-ink-soft);
+}
+
+.cv-dotlist li::before {
+  content: "";
+  width: 0.28em;
+  height: 0.28em;
+  margin-top: calc((1.4em - 0.28em) / 2);
+  border-radius: 50%;
+  background: var(--cv-accent);
+}
+
+.cv-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.cv-kv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 0.8em;
+  font-size: 0.95em;
+  line-height: 1.4;
+  color: var(--cv-ink-soft);
+}
+
+.cv-kv-row > span:last-child {
+  flex: none;
+  font-size: 0.92em;
+  color: var(--cv-muted);
+}
+
+/* ---------- photo ---------- */
+
+.cv-photo {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--cv-line);
+}
+
+.cv-photo[data-shape="circle"] {
+  border-radius: 50%;
+}
+
+.cv-photo[data-shape="rounded"] {
+  border-radius: 18%;
+}
+
+.cv-photo img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.cv-surface .cv-photo {
+  box-shadow: 0 0 0 3px var(--cv-surface-line);
+}
+
+/* ---------- header ---------- */
+
+.cv-name {
+  font-family: var(--cv-font-heading);
+  font-size: 2.3em;
+  font-weight: var(--cv-name-weight);
+  line-height: 1.1;
+  letter-spacing: var(--cv-name-track);
+  color: var(--cv-ink);
+  overflow-wrap: break-word;
+}
+
+[data-upper-name] .cv-name {
+  font-size: 1.95em;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.cv-role {
+  margin-top: 0.36em;
+  font-size: 1.14em;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--cv-accent-ink);
+}
+
+.cv-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34em 1.25em;
+  min-width: 0;
+  font-size: 0.88em;
+  line-height: 1.42;
+  color: var(--cv-muted);
+}
+
+.cv-contact-item {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.46em;
+  min-width: 0;
+}
+
+.cv-contact-item svg {
+  flex: none;
+  width: 1.08em;
+  height: 1.08em;
+  margin-top: 0.17em;
+  color: var(--cv-accent-ink);
+}
+
+.cv-contact--center {
+  justify-content: center;
+}
+
+.cv-contact--stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0.52em;
+}
+
+.cv-contact-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  min-width: 0;
+}
+
+.cv-contact--plain {
+  column-gap: 0;
+}
+
+.cv-contact--plain .cv-contact-item {
+  gap: 0;
+}
+
+.cv-contact--plain .cv-contact-item:not(:last-child)::after {
+  content: "·";
+  padding: 0 0.7em;
+  color: var(--cv-line-strong);
+}
+
+.cv-contact--grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--cv-contact-rows, 3), auto);
+  gap: 0.3em 1.4em;
+  justify-content: end;
+}
+
+/* header: photo + identity side by side */
+.cv-head {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+  min-width: 0;
+}
+
+.cv-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-head-text > .cv-contact {
+  margin-top: 0.85em;
+}
+
+.cv-head--center {
+  flex-direction: column;
+  gap: 0.85em;
+  padding-bottom: calc(var(--cv-gap-header) * 0.85);
+  border-bottom: 1px solid var(--cv-line-strong);
+  text-align: center;
+}
+
+.cv-head--rule {
+  padding-bottom: calc(var(--cv-gap-header) * 0.78);
+  border-bottom: 2px solid var(--cv-accent);
+}
+
+.cv-head--split {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2em;
+}
+
+.cv-head--split > .cv-contact {
+  flex: none;
+  max-width: 52%;
+}
+
+.cv-head--big .cv-name {
+  font-size: 2.9em;
+  line-height: 1.02;
+}
+
+.cv-head--big .cv-role {
+  font-size: 1.24em;
+}
+
+.cv-band {
+  padding: calc(var(--cv-pad-y) * 0.86) var(--cv-pad-x);
+}
+
+.cv-band--tint {
+  background: var(--cv-tint);
+}
+
+.cv-hero-summary {
+  margin-top: 1.25em;
+  max-width: 46em;
+  font-size: 1.02em;
+  color: var(--cv-ink-soft);
+  white-space: pre-line;
+}
+
+.cv-hero-contact {
+  margin-top: 1.25em;
+  padding-top: 1em;
+  border-top: 1px solid var(--cv-line);
+}
+
+/* editorial masthead */
+.cv-masthead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9em;
+  padding: 1.1em 0 1.2em;
+  border-top: 2px solid var(--cv-ink);
+  border-bottom: 1px solid var(--cv-line-strong);
+  text-align: center;
+}
+
+.cv-masthead .cv-role {
+  margin-top: 0.3em;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.cv-lead {
+  padding: 0 4.5em;
+  font-size: 1.08em;
+  font-style: italic;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--cv-ink-soft);
+  white-space: pre-line;
+}
+
+/* ---------- layout pieces ---------- */
+
+.cv-pad {
+  flex: 1;
+  padding: var(--cv-pad-y) var(--cv-pad-x);
+}
+
+.cv-cols {
+  display: grid;
+  column-gap: 2.6em;
+  align-items: start;
+}
+
+.cv-cols--divided > .cv-flow + .cv-flow {
+  align-self: stretch;
+  padding-left: 2em;
+  border-left: 1px solid var(--cv-line);
+}
+
+.cv-cols--divided {
+  column-gap: 2em;
+}
+
+.cv-panel {
+  padding: 1.25em 1.3em;
+  border-radius: 6px;
+  background: var(--cv-tint);
+}
+
+.cv-sidebar {
+  min-width: 0;
+}
+
+.cv-sidebar-photo {
+  display: flex;
+  justify-content: center;
+}
+
+.cv-stripe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 11px;
+  background: var(--cv-accent);
+}
+
+/* minimal-lines: a hairline above every section label */
+[data-divider] .cv-flow > .cv-section > .cv-label {
+  padding-top: calc(var(--cv-gap-section) * 0.72);
+  border-top: 1px solid var(--cv-line-strong);
+}
+
+[data-divider][data-label="underline"] .cv-flow > .cv-section > .cv-label {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* editorial: section labels sit in a left gutter */
+[data-gutter] .cv-flow > .cv-section {
+  display: grid;
+  grid-template-columns: 10.2em minmax(0, 1fr);
+  column-gap: 1.5em;
+  row-gap: 0;
+  align-items: baseline;
+}
+
+[data-gutter] .cv-flow > .cv-section > .cv-label {
+  grid-column: 1;
+  display: block;
+  padding: 0;
+  border: 0;
+  font-size: 0.8em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cv-accent-ink);
+}
+
+[data-gutter] .cv-flow > .cv-section > .cv-label::before,
+[data-gutter] .cv-flow > .cv-section > .cv-label::after {
+  content: none;
+}
+
+[data-gutter] .cv-flow > .cv-section > .cv-label > span {
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+
+[data-gutter] .cv-flow > .cv-section > :not(.cv-label) {
+  grid-column: 2;
+}
+
+/* timeline: dates in a left column, a rail with one dot per entry */
+.cv-tl {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cv-tl-entry {
+  display: grid;
+  grid-template-columns: 6.7em minmax(0, 1fr);
+}
+
+.cv-tl-date {
+  padding-right: 1.15em;
+  text-align: right;
+}
+
+.cv-tl-date .cv-date {
+  display: block;
+  padding-top: 0.15em;
+  line-height: 1.34;
+  white-space: normal;
+}
+
+.cv-tl-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cv-gap-bullet);
+  min-width: 0;
+  padding: 0 0 var(--cv-gap-item) 1.3em;
+  border-left: 1.5px solid var(--cv-line-strong);
+}
+
+.cv-tl-entry:last-child > .cv-tl-body {
+  padding-bottom: 0.15em;
+}
+
+.cv-tl-dot {
+  position: absolute;
+  top: 0.4em;
+  left: calc(-0.38em - 0.75px);
+  width: 0.76em;
+  height: 0.76em;
+  border: 2px solid var(--cv-accent);
+  border-radius: 50%;
+  background: var(--cv-paper);
+}
+
+/* ---------- editor aid: flash the section being edited (screen only) ---------- */
+
+@keyframes cv-section-flash {
+  0% {
+    background-color: var(--cv-tint);
+    box-shadow: 0 0 0 6px var(--cv-tint), 0 0 0 7.5px var(--cv-accent);
+  }
+  60% {
+    background-color: var(--cv-tint);
+    box-shadow: 0 0 0 6px var(--cv-tint), 0 0 0 7.5px var(--cv-accent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 6px transparent, 0 0 0 7.5px transparent;
+  }
+}
+
+.cv-page [data-cv-active] {
+  border-radius: 2px;
+  animation: cv-section-flash 1.6s cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-page [data-cv-active] {
+    animation-duration: 0.01s;
+  }
+}
+
+/* ---------- print ---------- */
+
+.cv-print-root {
+  position: fixed;
+  top: 0;
+  left: -200000px;
+  width: 794px;
+  pointer-events: none;
+}
+
+@media print {
+  html.cv-printing,
+  html.cv-printing body {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  html.cv-printing body > *:not(.cv-print-root) {
+    display: none !important;
+  }
+
+  html.cv-printing .cv-print-root {
+    position: static !important;
+    left: auto !important;
+    display: block !important;
+    width: 794px !important;
+  }
+
+  .cv-print-root .cv-doc {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  .cv-print-root .cv-measure {
+    display: none !important;
+  }
+
+  .cv-print-root .cv-page {
+    margin: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .cv-print-root .cv-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .cv-print-root,
+  .cv-print-root * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .cv-page [data-cv-active] {
+    animation: none !important;
+  }
+}
